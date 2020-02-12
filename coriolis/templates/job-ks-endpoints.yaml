@@ -1,5 +1,3 @@
-#!/bin/bash
-
 {{/*
 Copyright 2020 Cloudbase Solutions SRL.
 
@@ -16,13 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
-set -ex
-export HOME=/tmp
-
-{{- if .Values.bootstrap.enabled | default "echo 'Not Enabled'" }}
-
-    {{- to be used for initial bootstrapping purposes (ex: creating a default Coriolis endpoint ) }}
-
+{{- if .Values.manifests.job_ks_endpoints }}
+{{- $ksServiceJob := dict "envAll" . "serviceName" "coriolis" "serviceTypes" ( tuple "migration" ) -}}
+{{ $ksServiceJob | include "helm-toolkit.manifests.job_ks_endpoints" }}
 {{- end }}
-
-exit 0

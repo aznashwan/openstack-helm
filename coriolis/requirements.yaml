@@ -12,21 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: v1
-
-name: coriolis
-description: Automated and scalable Cloud Migration and Disaster Recovery as a Service.
-type: application
-
-version: 0.1.0
-
-home: https://cloudbase.it/coriolis
-sources:
-    - https://github.com/cloudbase/coriolis
-    - https://github.com/cloudbase/coriolis-web
-    - https://github.com/cloudbase/python-coriolisclient
-maintainers:
-    - name: Cloudbase Solutions SRL
-    - email: info@cloudbasesolutions.com
-
-appVersion: 02.02.2020
+dependencies:
+  - name: helm-toolkit
+    repository: http://localhost:8879/charts
+    version: 0.1.0

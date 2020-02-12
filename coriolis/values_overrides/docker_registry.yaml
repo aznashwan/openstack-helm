@@ -1,0 +1,5 @@
+images:
+  imageCredentials:
+    registry: registry.cloudbase.it
+    username:
+    password:

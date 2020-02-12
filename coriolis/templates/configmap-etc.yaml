@@ -52,11 +52,14 @@ limitations under the License.
 {{- end -}}
 
 {{- if empty .Values.conf.coriolis.database.connection -}}
-{{- $_ := tuple "oslo_db" "internal" "coriolis" "mysql" . | include "helm-toolkit.endpoints.authenticated_endpoint_uri_lookup"| set .Values.conf.coriolis.database "connection" -}}
+{{- $_ := tuple "oslo_db" "internal" "coriolis" "mysql" . | include "helm-toolkit.endpoints.authenticated_endpoint_uri_lookup" | set .Values.conf.coriolis.database "connection" -}}
 {{- end -}}
 
 {{- if empty .Values.conf.coriolis.DEFAULT.transport_url -}}
 {{- $_ := tuple "oslo_messaging" "internal" "coriolis" "amqp" . | include "helm-toolkit.endpoints.authenticated_transport_endpoint_uri_lookup" | set .Values.conf.coriolis.DEFAULT "transport_url" -}}
+{{- end -}}
+{{- if empty .Values.conf.coriolis.DEFAULT.messaging_transport_url -}}
+{{- $_ := tuple "oslo_messaging" "internal" "coriolis" "amqp" . | include "helm-toolkit.endpoints.authenticated_transport_endpoint_uri_lookup" | set .Values.conf.coriolis.DEFAULT "messaging_transport_url" -}}
 {{- end -}}
 
 ---
@@ -69,4 +72,8 @@ data:
   coriolis.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.coriolis | b64enc }}
   api-paste.ini: {{ include "helm-toolkit.utils.to_ini" .Values.conf.paste | b64enc }}
   policy.json: {{ toJson .Values.conf.policy | b64enc }}
+{{- range $prv, $prvconf := $envAll.Values.conf.providers }}
+{{- if or (has $prv $envAll.Values.providers.source) (has $prv $envAll.Values.providers.destination) }}
+  {{- printf "coriolis_provider_%s.conf" $prv }}: {{ include "helm-toolkit.utils.to_oslo_conf" $prvconf | b64enc }}
+{{- end}}
 {{- end }}

@@ -1,5 +1,3 @@
-#!/bin/bash
-
 {{/*
 Copyright 2020 Cloudbase Solutions SRL.
 
@@ -16,13 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
-set -ex
-export HOME=/tmp
-
-{{- if .Values.bootstrap.enabled | default "echo 'Not Enabled'" }}
-
-    {{- to be used for initial bootstrapping purposes (ex: creating a default Coriolis endpoint ) }}
-
-{{- end }}
-
-exit 0
+{{/* NOTE: nothing to clean, but is possible to run some operations
+     (ex: deleting all Replica disks) in the future.
+*/}}

@@ -59,7 +59,7 @@ spec:
         - name: coriolis-worker
 {{ tuple $envAll "coriolis_worker" | include "helm-toolkit.snippets.image" | indent 10 }}
 {{ tuple $envAll $envAll.Values.pod.resources.worker | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
-{{ dict "envAll" $envAll "application" "coriolis_worker" "container" "coriolis_worker" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
+{{ dict "envAll" $envAll "application" "coriolis_worker" "container" "init_coriolis_conf" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
           command:
             - /tmp/coriolis-worker.sh
             - start
@@ -94,6 +94,12 @@ spec:
               mountPath: /etc/coriolis/coriolis.conf
               subPath: coriolis.conf
               readOnly: true
+{{- range $prv := concat .Values.providers.source Values.providers.destination | uniq }}
+            - name: coriolis-etc
+              mountPath: {{- printf "/etc/coriolis/providers/coriolis_provider_%s.conf" $prv }}
+              subPath: {{- printf "coriolis_provider_%s.conf" $prv }}
+              readOnly: true
+{{- end}}
 {{ if $mounts_coriolis_worker.volumeMounts }}{{ toYaml $mounts_coriolis_worker.volumeMounts | indent 12 }}{{ end }}
       volumes:
         - name: pod-tmp

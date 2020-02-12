@@ -23,7 +23,10 @@ function start () {
   exec coriolis-api \
         --config-file /etc/coriolis/coriolis.conf \
         --config-file /tmp/pod-shared/internal_tenant.conf
-  # TODO: determine merit of "internal_tenant.conf" above ^
+        # TODO: determine merit of "internal_tenant.conf" above ^
+{{- range $prv := concat .Values.providers.source .Values.providers.destination | uniq}}
+        {{- printf "--config-file /etc/coriolis/plugins/%s_migration_provider.conf" $prv }}
+{{- end }}
 }
 
 function stop () {

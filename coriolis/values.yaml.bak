@@ -183,7 +183,6 @@ pod:
   lifecycle:
     upgrades:
       deployments:
-        # NOTE: useful when upgrading the chart:
         revision_history: 1
         pod_replacement_strategy: RollingUpdate
         rolling_update:
