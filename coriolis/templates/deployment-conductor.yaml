@@ -1,0 +1,110 @@
+{{/*
+Copyright 2020 Cloudbase Solutions SRL.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+
+{{- if .Values.manifests.deployment_conductor }}
+{{- $envAll := . }}
+
+{{- $mounts_coriolis_conductor := .Values.pod.mounts.coriolis_conductor.coriolis_conductor }}
+{{- $mounts_coriolis_conductor_init := .Values.pod.mounts.coriolis_conductor.init_container }}
+
+{{- $serviceAccountName := "coriolis-conductor" }}
+{{ tuple $envAll "conductor" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coriolis-conductor
+  annotations:
+    {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" }}
+  labels:
+{{ tuple $envAll "coriolis" "conductor" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
+spec:
+  replicas: {{ .Values.pod.replicas.conductor }}
+  selector:
+    matchLabels:
+{{ tuple $envAll "coriolis" "conductor" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 6 }}
+{{ tuple $envAll | include "helm-toolkit.snippets.kubernetes_upgrades_deployment" | indent 2 }}
+  template:
+    metadata:
+      labels:
+{{ tuple $envAll "coriolis" "conductor" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
+      annotations:
+{{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" | indent 8 }}
+        configmap-bin-hash: {{ tuple "configmap-bin.yaml" . | include "helm-toolkit.utils.hash" }}
+        configmap-etc-hash: {{ tuple "configmap-etc.yaml" . | include "helm-toolkit.utils.hash" }}
+    spec:
+      serviceAccountName: {{ $serviceAccountName }}
+{{ dict "envAll" $envAll "application" "coriolis_conductor" | include "helm-toolkit.snippets.kubernetes_pod_security_context" | indent 6 }}
+      affinity:
+{{ tuple $envAll "coriolis" "conductor" | include "helm-toolkit.snippets.kubernetes_pod_anti_affinity" | indent 8 }}
+      nodeSelector:
+        {{ .Values.labels.conductor.node_selector_key }}: {{ .Values.labels.conductor.node_selector_value }}
+      terminationGracePeriodSeconds: {{ .Values.pod.lifecycle.termination_grace_period.conductor.timeout | default "30" }}
+      initContainers:
+{{ tuple $envAll "conductor" $mounts_coriolis_conductor_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
+      containers:
+        - name: coriolis-conductor
+{{ tuple $envAll "coriolis_conductor" | include "helm-toolkit.snippets.image" | indent 10 }}
+{{ tuple $envAll $envAll.Values.pod.resources.conductor | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
+{{ dict "envAll" $envAll "application" "coriolis_conductor" "container" "coriolis_conductor" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
+          command:
+            - /tmp/coriolis-conductor.sh
+            - start
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /tmp/coriolis-conductor.sh
+                  - stop
+          ports:
+            - name: c-conductor
+              containerPort: {{ tuple "migration" "internal" "conductor" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ tuple "migration" "internal" "conductor" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ tuple "migration" "internal" "conductor" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+            initialDelaySeconds: 30
+            failureThreshold: 3
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: coriolis-bin
+              mountPath: /tmp/coriolis-conductor.sh
+              subPath: coriolis-conductor.sh
+              readOnly: true
+            - name: coriolis-etc
+              mountPath: /etc/coriolis/coriolis.conf
+              subPath: coriolis.conf
+              readOnly: true
+{{ if $mounts_coriolis_conductor.volumeMounts }}{{ toYaml $mounts_coriolis_conductor.volumeMounts | indent 12 }}{{ end }}
+      volumes:
+        - name: pod-tmp
+          emptyDir: {}
+        - name: coriolis-bin
+          configMap:
+            name: coriolis-bin
+            defaultMode: 0555
+        - name: coriolis-etc
+          secret:
+            secretName: coriolis-etc
+            defaultMode: 0444
+{{ if $mounts_coriolis_conductor.volumes }}{{ toYaml $mounts_coriolis_conductor.volumes | indent 8 }}{{ end }}
+{{- end }}

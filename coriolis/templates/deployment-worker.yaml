@@ -1,0 +1,110 @@
+{{/*
+Copyright 2020 Cloudbase Solutions SRL.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+
+{{- if .Values.manifests.deployment_worker }}
+{{- $envAll := . }}
+
+{{- $mounts_coriolis_worker := .Values.pod.mounts.coriolis_worker.coriolis_worker }}
+{{- $mounts_coriolis_worker_init := .Values.pod.mounts.coriolis_worker.init_container }}
+
+{{- $serviceAccountName := "coriolis-worker" }}
+{{ tuple $envAll "worker" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coriolis-worker
+  annotations:
+    {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" }}
+  labels:
+{{ tuple $envAll "coriolis" "worker" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
+spec:
+  replicas: {{ .Values.pod.replicas.worker }}
+  selector:
+    matchLabels:
+{{ tuple $envAll "coriolis" "worker" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 6 }}
+{{ tuple $envAll | include "helm-toolkit.snippets.kubernetes_upgrades_deployment" | indent 2 }}
+  template:
+    metadata:
+      labels:
+{{ tuple $envAll "coriolis" "worker" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
+      annotations:
+{{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" | indent 8 }}
+        configmap-bin-hash: {{ tuple "configmap-bin.yaml" . | include "helm-toolkit.utils.hash" }}
+        configmap-etc-hash: {{ tuple "configmap-etc.yaml" . | include "helm-toolkit.utils.hash" }}
+    spec:
+      serviceAccountName: {{ $serviceAccountName }}
+{{ dict "envAll" $envAll "application" "coriolis_worker" | include "helm-toolkit.snippets.kubernetes_pod_security_context" | indent 6 }}
+      affinity:
+{{ tuple $envAll "coriolis" "worker" | include "helm-toolkit.snippets.kubernetes_pod_anti_affinity" | indent 8 }}
+      nodeSelector:
+        {{ .Values.labels.worker.node_selector_key }}: {{ .Values.labels.worker.node_selector_value }}
+      terminationGracePeriodSeconds: {{ .Values.pod.lifecycle.termination_grace_period.worker.timeout | default "30" }}
+      initContainers:
+{{ tuple $envAll "worker" $mounts_coriolis_worker_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
+      containers:
+        - name: coriolis-worker
+{{ tuple $envAll "coriolis_worker" | include "helm-toolkit.snippets.image" | indent 10 }}
+{{ tuple $envAll $envAll.Values.pod.resources.worker | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
+{{ dict "envAll" $envAll "application" "coriolis_worker" "container" "coriolis_worker" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
+          command:
+            - /tmp/coriolis-worker.sh
+            - start
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /tmp/coriolis-worker.sh
+                  - stop
+          ports:
+            - name: c-worker
+              containerPort: {{ tuple "migration" "internal" "worker" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ tuple "migration" "internal" "worker" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ tuple "migration" "internal" "worker" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+            initialDelaySeconds: 30
+            failureThreshold: 3
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: coriolis-bin
+              mountPath: /tmp/coriolis-worker.sh
+              subPath: coriolis-worker.sh
+              readOnly: true
+            - name: coriolis-etc
+              mountPath: /etc/coriolis/coriolis.conf
+              subPath: coriolis.conf
+              readOnly: true
+{{ if $mounts_coriolis_worker.volumeMounts }}{{ toYaml $mounts_coriolis_worker.volumeMounts | indent 12 }}{{ end }}
+      volumes:
+        - name: pod-tmp
+          emptyDir: {}
+        - name: coriolis-bin
+          configMap:
+            name: coriolis-bin
+            defaultMode: 0555
+        - name: coriolis-etc
+          secret:
+            secretName: coriolis-etc
+            defaultMode: 0444
+{{ if $mounts_coriolis_worker.volumes }}{{ toYaml $mounts_coriolis_worker.volumes | indent 8 }}{{ end }}
+{{- end }}

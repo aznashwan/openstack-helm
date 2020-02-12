@@ -1,0 +1,865 @@
+
+# List of provider plugins to enable/include:
+providers:
+  source:
+    - aws
+    - azure
+    - openstack
+    - vmware_vsphere
+  destination:
+    - aws
+    - azure
+    - openstack
+
+# Labels used by openstack-helm:
+labels:
+  api: 
+    node_selector_key: openstack-control-plane
+    node_selector_value: enabled
+  conductor: 
+    node_selector_key: openstack-control-plane
+    node_selector_value: enabled
+  replica_cron: 
+    node_selector_key: openstack-control-plane
+    node_selector_value: enabled
+  worker: 
+    node_selector_key: openstack-control-plane
+    node_selector_value: enabled
+  web: 
+    node_selector_key: openstack-control-plane
+    node_selector_value: enabled
+  web-proxy:
+    node_selector_key: openstack-control-plane
+    node_selector_value: enabled
+
+release_group: null
+
+images:
+  tags:
+    db_init: docker.io/openstackhelm/heat:stein-ubuntu_bionic
+    # TODO: update prefix:
+    coriolis_db_sync: docker.io/openstackhelm/cinder:stein-ubuntu_bionic
+    db_drop: docker.io/openstackhelm/heat:stein-ubuntu_bionic
+    rabbit_init: docker.io/rabbitmq:3.7-management
+    ks_user: docker.io/openstackhelm/heat:stein-ubuntu_bionic
+    ks_service: docker.io/openstackhelm/heat:stein-ubuntu_bionic
+    ks_endpoints: docker.io/openstackhelm/heat:stein-ubuntu_bionic
+    # TODO: update prefix:
+    coriolis_api: docker.io/openstackhelm/cinder:stein-ubuntu_bionic
+    coriolis_conductor: 
+    coriolis_replica_cron: 
+    coriolis_worker: 
+    coriolis_web: 
+    coriolis_web_proxy: 
+  pull_policy: "IfNotPresent"
+  local_registry:
+    active: false
+    exclude:
+      - dep_check
+      - image_repo_sync
+
+
+pod:
+  security_context:
+    coriolis_api:
+      pod:
+        runAsUser: 42424
+      container:
+        # TODO: define:
+        init_coriolis_conf:
+          runAsUser: 0
+          readOnlyRootFilesystem: true
+        coriolis_api:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+    coriolis_conductor:
+      pod:
+        runAsUser: 42424
+      container:
+        init_coriolis_conf:
+          runAsUser: 0
+          readOnlyRootFilesystem: true
+        coriolis_conductor:
+          redOnlyRootFilesystem: true
+          # TODO: ???
+          runAsUser: 0
+    coriolis_replica_cron:
+      pod:
+        runAsUser: 42424
+      container:
+        init_coriolis_conf:
+          runAsUser: 0
+          readOnlyRootFilesystem: true
+        coriolis_replica_cron:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+    coriolis_worker:
+      pod:
+        runAsUser: 42424
+      container:
+        init_coriolis_conf:
+          runAsUser: 0
+          readOnlyRootFilesystem: true
+        coriolis_worker:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+        # TODO:
+        # - define check/create/mount external bin dir
+    coriolis_web:
+      pod:
+        runAsUser: 42424
+      container:
+        # TODO: define:
+        init_coriolis_web_conf:
+          runAsUser: 0
+          readOnlyRootFilesystem: true
+        coriolis_web:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+    coriolis_web_proxy:
+        # TODO: define:
+        init_coriolis_web_proxy_conf:
+          runAsUser: 0
+          readOnlyRootFilesystem: true
+        coriolis_web_proxy:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+  
+  affinity:
+    anti:
+      type:
+        default: preferredDuringSchedulingIgnoredDuringExecution
+      topologyKey:
+        default: kubernetes.io/hostname
+      weight:
+        default: 10
+
+  mounts:
+    # NOTE: used to specify any additional desired mounts
+    # The standard mounts are handled in the templates.
+    coriolis_api:
+      init_container: null
+      coriolis_api:
+        volumeMounts:
+        volumes:
+    coriolis_conductor:
+      init_container: null
+      coriolis_conductor:
+        volumeMounts:
+        volumes:
+    coriolis_replica_cron:
+      init_container: null
+      coriolis_replica_cron:
+        volumeMounts:
+        volumes:
+    coriolis_worker:
+      init_container: null
+      coriolis_worker:
+        volumeMounts:
+        volumes:
+    coriolis_web:
+      init_container: null
+      coriolis_web:
+        volumeMounts:
+        volumes:
+    coriolis_web_proxy:
+      init_container: null
+      coriolis_web_proxy:
+        volumeMounts:
+        volumes:
+
+  replicas:
+    api: 1
+    conductor: 1
+    replica_cron: 1
+    worker: 1
+    web: 1
+    web_proxy: 1
+
+  lifecycle:
+    upgrades:
+      deployments:
+        revision_history: 1
+        pod_replacement_strategy: RollingUpdate
+        rolling_update:
+          max_unavailable: 1
+          max_surge: 3
+    disruption_budget:
+      api:
+        min_available: 0
+    termination_grace_period:
+      api:
+        timeout: 30
+
+  resources:
+    # TODO: try enabling to see how it works:
+    enabled: false
+    api:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    conductor:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    replica_cron:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    worker:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    web:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    web-proxy:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    jobs:
+      # TODO: check jobs list:
+      bootstrap:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      rabbit_init:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      db_init:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      db_sync:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      db_drop:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      clean:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      ks_endpoints:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      ks_service:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+      ks_user:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+
+bootstrap:
+  enabled: true
+  ks_user: admin
+  bootstrap_conf_backends: true
+  # TODO: determine what else might go here
+
+network:
+  api:
+    # TODO: what are these???
+    ingress:
+      public: true
+      classes:
+        namespace: "nginx"
+        cluster: "nginx-cluster"
+      annotations:
+        nginx.ingress.kubernetes.io/rewrite-target: /
+    external_policy_local: false
+    node_port:
+      enabled: false
+      port: 30877
+
+conf:
+  paste:
+    # TODO: see what api-paste-related stuff go here
+  policy:
+    # TODO: barf out all policies here
+  coriolis:
+    DEFAULT:
+      # TODO: barf out default options here
+      debug: true
+      # TODO:
+      providers:
+    database:
+      max_retries: -1
+    keystone_authtoken: -1
+      # NOTE: all the other required params will be set in the configmap-etc job:
+      auth_version: v3
+      auth_type: password
+      memcache_security_strategy: ENCRYPT
+    oslo_concurrency:
+      lock_path: "/var/lib/coriolis/tmp"
+    oslo_messaging_notifications:
+      driver: messagingv2
+    trustee:
+      # TODO:
+    keystone:
+      # TODO:
+    oslo_policy:
+      # TODO:
+    conductor:
+      debug_os_morphing_errors: false
+      conductor_rpc_timeout: 60
+    worker:
+      worker_rpc_timeout: 60
+    # TODO: see if all the default plugin configs should go here:
+    # ex:
+    # aws_migration_provider:
+    #   worker_instance_type = t2.medium
+  
+  logging:
+    loggers:
+      keys:
+        - root
+        - coriolis
+    handlers:
+      keys:
+        - stdout
+        - stderr
+        - "null"
+    formatters:
+      keys:
+        - context
+        - default
+    logger_root:
+      level: WARNING
+      handlers: stdout
+    logger_coriolis:
+      level: DEBUG 
+      handlers:
+        - stdout
+      qualname: coriolis 
+    logger_amqp:
+      level: WARNING
+      handlers: stderr
+      qualname: amqp
+    logger_amqplib:
+      level: WARNING
+      handlers: stderr
+      qualname: amqplib
+    logger_eventletwsgi:
+      level: WARNING
+      handlers: stderr
+      qualname: eventlet.wsgi.server
+    logger_sqlalchemy:
+      level: WARNING
+      handlers: stderr
+      qualname: sqlalchemy
+    logger_boto:
+      level: WARNING
+      handlers: stderr
+      qualname: boto
+    # TODO: research logging options for coriolis-logger:
+    handler_null:
+      class: logging.NullHandler
+      formatter: default
+      args: ()
+    handler_stdout:
+      class: StreamHandler
+      args: (sys.stdout,)
+      formatter: context
+    handler_stderr:
+      class: StreamHandler
+      args: (sys.stderr,)
+      formatter: context
+    formatter_context:
+      class: oslo_log.formatters.ContextFormatter
+      datefmt: "%Y-%m-%d %H:%M:%S"
+    formatter_default:
+      format: "%(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S"
+  rabbitmq:
+    #NOTE(rk760n): adding rmq policy to mirror messages from notification queues and set expiration time for the ones
+    policies:
+      # TODO: check if these are necessary 
+      - vhost: "coriolis"
+        name: "ha_ttl_coriolis"
+        definition:
+          #mirror messges to other nodes in rmq cluster
+          ha-mode: "all"
+          ha-sync-mode: "automatic"
+          #70s
+          message-ttl: 70000
+        priority: 0
+        apply-to: all
+        pattern: '^(?!(amq\.|reply_)).*'
+  # TODO: see what these are for:
+  #resource_filters:
+  #  volume:
+  #    - name
+  #    - status
+  #    - metadata
+  #    - bootable
+  #    - migration_status
+  #    - availability_zone
+  #    - group_id
+  #  backup:
+  #    - name
+  #    - status
+  #    - volume_id
+  #  snapshot:
+  #    - name
+  #    - status
+  #    - volume_id
+  #    - metadata
+  #    - availability_zone
+
+dependencies:
+  dynamic:
+    common:
+      local_image_registry:
+        jobs:
+          # TODO: define:
+          - coriolis-image-repo-sync
+        services:
+          - endpoint: node
+            service: local_image_registry
+  static:
+    api:
+      jobs:
+        - coriolis-db-sync
+        - coriolis-ks-user
+        - coriolis-ks-endpoints
+        - coriolis-rabbit-init
+      services:
+        - endpoint: internal
+          service: oslo_db
+        # NOTE: required for auth:
+        - endpoint: internal
+          service: identity
+    conductor:
+      jobs:
+        - coriolis-db-sync
+        - coriolis-ks-user
+        - coriolis-ks-endpoints
+        - coriolis-rabbit-init
+      services:
+        - endpoint: internal
+          service: oslo_db
+        # NOTE: required for auth and checks:
+        - endpoint: internal
+          service: identity
+    replica_cron:
+        - coriolis-db-sync
+        - coriolis-ks-user
+        - coriolis-ks-endpoints
+        - coriolis-rabbit-init
+      services:
+        - endpoint: internal
+          service: oslo_db
+        # TODO: check if required:
+        - endpoint: internal
+          service: identity
+    worker:
+        - coriolis-db-sync
+        - coriolis-ks-user
+        - coriolis-ks-endpoints
+        - coriolis-rabbit-init
+      services:
+        - endpoint: internal
+          service: oslo_db
+        # NOTE: required for fetching Barbican secrets:
+        - endpoint: internal
+          service: identity
+    bootstrap:
+      services:
+        - endpoint: internal
+          service: identity
+        - endpoint: internal
+          service: volume
+      pod:
+        - requireSameNode: false
+          labels:
+            # NOTE: see what this reference points to:
+            application: coriolis 
+            component: volume
+    clean:
+      jobs: null
+    db_drop:
+      services:
+        - endpoint: internal
+          service: oslo_db
+    db_init:
+      services:
+        - endpoint: internal
+          service: oslo_db
+    db_sync:
+      jobs:
+        # TODO: define:
+        - coriolis-db-init
+      services:
+        - endpoint: internal
+          service: oslo_db
+    ks_endpoints:
+      jobs:
+        # TODO: define:
+        - coriolis-ks-service
+      services:
+        - endpoint: internal
+          service: identity
+    ks_service:
+      services:
+        - endpoint: internal
+          service: identity
+    ks_user:
+      services:
+        - endpoint: internal
+          service: identity
+    rabbit_init:
+      services:
+        - service: oslo_messaging
+          endpoint: internal
+    # TODO: check if required:
+    image_repo_sync:
+      services:
+        - endpoint: internal
+          service: local_image_registry
+    # TODO: check where this comes from:
+    create_internal_tenant:
+      services:
+        - endpoint: internal
+          service: identity
+
+# Names of secrets used by bootstrap and environmental checks:
+secrets:
+  identity:
+    # TODO: check where all of these are referenced:
+    admin: coriolis-keystone-admin
+    coriolis: coriolis-keystone-user
+    test: coriolis-keystone-test
+  oslo_db:
+    admin: coriolis-db-admin
+    cinder: coriolis-db-user
+  oslo_messaging:
+    admin: coriolis-rabbitmq-admin
+    cinder: coriolis-rabbitmq-user
+  tls:
+    # TODO check where this might be used by openstack-helm:
+    volume:
+      api:
+        public: cinder-tls-public
+
+# We use a different layout of the endpoints here to account for versioning
+# this swaps the service name and type, and should be rolled out to other
+# services.
+endpoints:
+
+  # TODO: add web-proxy?
+
+  cluster_domain_suffix: cluster.local
+  local_image_registry:
+    name: docker-registry
+    namespace: docker-registry
+    hosts:
+      # TODO: check if using these with registry.cloudbase.it works:
+      default: localhost
+      internal: docker-registry
+      node: localhost
+    host_fqdn_override:
+      default: null
+    port:
+      registry:
+        # TODO: add registry.cloudbase.it port too:
+        node: 5000
+  identity:
+    name: keystone
+    auth:
+      admin:
+        region_name: RegionOne
+        username: admin
+        password: password
+        project_name: admin
+        user_domain_name: default
+        project_domain_name: default
+      coriolis:
+        role: admin
+        region_name: RegionOne
+        username: coriolis 
+        # TODO: check this:
+        password: password
+        project_name: service
+        user_domain_name: service
+        project_domain_name: service
+    hosts:
+      default: keystone
+      internal: keystone-api
+    host_fqdn_override:
+      default: null
+    path:
+      default: /v3
+    scheme:
+      default: http
+    port:
+      api:
+        default: 80
+        internal: 5000
+  migration:
+    name: coriolis 
+    hosts:
+      default: coriolis-api
+      public: coriolis 
+    host_fqdn_override:
+      default: null
+      # NOTE(portdirect): this chart supports TLS for fqdn over-ridden public
+      # endpoints using the following format:
+      # public:
+      #   host: null
+      #   tls:
+      #     crt: null
+      #     key: null
+    path:
+      default: '/v1/%(tenant_id)s'
+    scheme:
+      default: 'http'
+    port:
+      api:
+        default: 7667 
+        public: 80
+  oslo_db:
+    auth:
+      # TODO: check where these are set/used and use them:
+      admin:
+        username: root
+        password: password
+      coriolis:
+        username: coriolis 
+        password: password
+    hosts:
+      default: mariadb
+    host_fqdn_override:
+      default: null
+    path: /coriolis
+    scheme: mysql+pymysql
+    port:
+      mysql:
+        default: 3306
+  oslo_messaging:
+    auth:
+      # TODO: check where these are set/used and use them:
+      admin:
+        username: rabbitmq
+        password: password
+      cinder:
+        username: coriolis 
+        password: password
+    statefulset:
+      replicas: 2
+      name: rabbitmq-rabbitmq
+    hosts:
+      default: rabbitmq
+    host_fqdn_override:
+      default: null
+    path: /coriolis
+    scheme: rabbit
+    port:
+      amqp:
+        default: 5672
+      http:
+        default: 15672
+  # TODO: see how/where to set these:
+  oslo_cache:
+    auth:
+      # NOTE(portdirect): this is used to define the value for keystone
+      # authtoken cache encryption key, if not set it will be populated
+      # automatically with a random value, but to take advantage of
+      # this feature all services should be set to use the same key,
+      # and memcache service.
+      memcache_secret_key: null
+    hosts:
+      default: memcached
+    host_fqdn_override:
+      default: null
+    port:
+      memcache:
+        default: 11211
+  # TODO: check what these are for and use them:
+  kube_dns:
+    namespace: kube-system
+    name: kubernetes-dns
+    hosts:
+      default: kube-dns
+    host_fqdn_override:
+      default: null
+    path:
+      default: null
+    scheme: http
+    port:
+      dns:
+        default: 53
+        protocol: UDP
+  ingress:
+    namespace: null
+    name: ingress
+    hosts:
+      default: ingress
+    port:
+      ingress:
+        default: 80
+
+network_policy:
+  # TODO: check what these are for:
+  coriolis:
+    ingress:
+      - {}
+    egress:
+      - {}
+
+manifests:
+  # TODO: check where these are needed:
+  configmap_bin: true
+  configmap_etc: true
+
+  deployment_api: true
+  deployment_conductor: true
+  deployment_replica_cron: true
+  deployment_worker: true
+  deployment_web: true
+  deployment_web_proxy: true
+
+  # TODO: define these:
+  ingress_api: true
+  job_bootstrap: true
+  job_clean: true
+  job_create_internal_tenant: true
+  job_db_init: true
+  job_rabbit_init: true
+  job_db_sync: true
+  job_db_drop: false
+  job_ks_endpoints: true
+  job_ks_service: true
+  job_ks_user: true
+  job_storage_init: true
+
+  # TODO: determine if these are needed:
+  #pdb_api: true
+  #pod_rally_test: true
+  #pvc_backup: true
+  #network_policy: false
+
+  secret_db: true
+  secret_ingress_tls: true
+  secret_keystone: true
+  secret_rabbitmq: true
+
+  service_api: true
+  service_ingress_api: true
+
+########### auto-generated by `helm create`:
+# replicaCount: 1
+
+#image:
+#  repository: nginx
+#  pullPolicy: IfNotPresent
+
+#imagePullSecrets: []
+#nameOverride: ""
+#fullnameOverride: ""
+
+#serviceAccount:
+#  # Specifies whether a service account should be created
+#  create: true
+#  # Annotations to add to the service account
+#  annotations: {}
+#  # The name of the service account to use.
+#  # If not set and create is true, a name is generated using the fullname template
+#  name:
+
+#podSecurityContext: {}
+#  # fsGroup: 2000
+
+#securityContext: {}
+#  # capabilities:
+#  #   drop:
+#  #   - ALL
+#  # readOnlyRootFilesystem: true
+#  # runAsNonRoot: true
+#  # runAsUser: 1000
+
+#service:
+#  type: ClusterIP
+#  port: 80
+
+#ingress:
+#  enabled: false
+#  annotations: {}
+#    # kubernetes.io/ingress.class: nginx
+#    # kubernetes.io/tls-acme: "true"
+#  hosts:
+#    - host: chart-example.local
+#      paths: []
+#  tls: []
+#  #  - secretName: chart-example-tls
+#  #    hosts:
+#  #      - chart-example.local
+
+#resources: {}
+#  # We usually recommend not to specify default resources and to leave this as a conscious
+#  # choice for the user. This also increases chances charts run on environments with little
+#  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+#  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+#  # limits:
+#  #   cpu: 100m
+#  #   memory: 128Mi
+#  # requests:
+#  #   cpu: 100m
+#  #   memory: 128Mi
+
+#nodeSelector: {}
+
+#tolerations: []
+
+#affinity: {}
