@@ -24,10 +24,21 @@ function start () {
         --config-file /etc/coriolis/coriolis.conf \
         --config-file /tmp/pod-shared/internal_tenant.conf
         # TODO: determine merit of "internal_tenant.conf" above ^
+{{- range $prv := .Values.providers.source }}
+        {{- printf "--config-file /etc/coriolis/plugins/%s_migration_provider.conf" $prv }}
+{{- end }}
+{{- range $prv := .Values.providers.destination }}
+{{- if not (has $prv .Values.providers.source) }}
+        {{- printf "--config-file /etc/coriolis/plugins/%s_migration_provider.conf" $prv }}
+{{- end }}
+{{- end }}
+{{/*
+# NOTE(aznashwan): `concat` does not work in Helm < 3 so we need to double-iterate like above ^
 {{- range $prv := concat .Values.providers.source .Values.providers.destination | uniq}}
         {{- printf "--config-file /etc/coriolis/plugins/%s_migration_provider.conf" $prv }}
 {{- end }}
 }
+*/}}
 
 function stop () {
   kill -TERM 1

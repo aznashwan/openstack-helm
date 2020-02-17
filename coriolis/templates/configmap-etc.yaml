@@ -75,5 +75,6 @@ data:
 {{- range $prv, $prvconf := $envAll.Values.conf.providers }}
 {{- if or (has $prv $envAll.Values.providers.source) (has $prv $envAll.Values.providers.destination) }}
   {{- printf "coriolis_provider_%s.conf" $prv }}: {{ include "helm-toolkit.utils.to_oslo_conf" $prvconf | b64enc }}
-{{- end}}
+{{- end }}
+{{- end }}
 {{- end }}

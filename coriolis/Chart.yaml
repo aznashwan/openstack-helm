@@ -16,7 +16,7 @@ apiVersion: v1
 
 name: coriolis
 description: Automated and scalable Cloud Migration and Disaster Recovery as a Service.
-type: application
+# type: application
 
 version: 0.1.0
 
@@ -27,6 +27,6 @@ sources:
     - https://github.com/cloudbase/python-coriolisclient
 maintainers:
     - name: Cloudbase Solutions SRL
-    - email: info@cloudbasesolutions.com
+      email: info@cloudbasesolutions.com
 
 appVersion: 02.02.2020

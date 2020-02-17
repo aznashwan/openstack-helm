@@ -94,12 +94,29 @@ spec:
               mountPath: /etc/coriolis/coriolis.conf
               subPath: coriolis.conf
               readOnly: true
-{{- range $prv := concat .Values.providers.source Values.providers.destination | uniq }}
+{{- range $prv := .Values.providers.source }}
             - name: coriolis-etc
               mountPath: {{- printf "/etc/coriolis/providers/coriolis_provider_%s.conf" $prv }}
               subPath: {{- printf "coriolis_provider_%s.conf" $prv }}
               readOnly: true
 {{- end}}
+{{- range $prv := .Values.providers.destination }}
+{{- if not (has $prv .Values.providers.source) }}
+            - name: coriolis-etc
+              mountPath: {{- printf "/etc/coriolis/providers/coriolis_provider_%s.conf" $prv }}
+              subPath: {{- printf "coriolis_provider_%s.conf" $prv }}
+              readOnly: true
+{{- end}}
+{{- end}}
+{{/*
+# NOTE: `concat` does not work in Helm < 3 so we must double-iterate like above ^
+{{- range $prv := concat .Values.providers.source .Values.providers.destination | uniq }}
+            - name: coriolis-etc
+              mountPath: {{- printf "/etc/coriolis/providers/coriolis_provider_%s.conf" $prv }}
+              subPath: {{- printf "coriolis_provider_%s.conf" $prv }}
+              readOnly: true
+{{- end}}
+*/}}
 {{ if $mounts_coriolis_worker.volumeMounts }}{{ toYaml $mounts_coriolis_worker.volumeMounts | indent 12 }}{{ end }}
       volumes:
         - name: pod-tmp

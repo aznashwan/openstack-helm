@@ -21,7 +21,7 @@ export HOME=/tmp
 
 {{- if .Values.bootstrap.enabled | default "echo 'Not Enabled'" }}
 
-    {{- to be used for initial bootstrapping purposes (ex: creating a default Coriolis endpoint ) }}
+    {{/* to be used for initial bootstrapping purposes (ex: creating a default Coriolis endpoint ) */}}
 
 {{- end }}
 
