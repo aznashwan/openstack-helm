@@ -55,6 +55,8 @@ spec:
       terminationGracePeriodSeconds: {{ .Values.pod.lifecycle.termination_grace_period.api.timeout | default "30" }}
       initContainers:
 {{ tuple $envAll "api" $mounts_coriolis_api_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
+      imagePullSecrets:
+      - name: {{ .Values.images.imageCredentials.coriolisImagePullSecret }}
       containers:
         - name: coriolis-api
 {{ tuple $envAll "coriolis_api" | include "helm-toolkit.snippets.image" | indent 10 }}

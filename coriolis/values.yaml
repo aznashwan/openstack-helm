@@ -21,22 +21,25 @@ providers:
 
 # Labels used by openstack-helm:
 labels:
-  api: 
+  api:
     node_selector_key: openstack-control-plane
     node_selector_value: enabled
-  conductor: 
+  conductor:
     node_selector_key: openstack-control-plane
     node_selector_value: enabled
-  replica_cron: 
+  replica_cron:
     node_selector_key: openstack-control-plane
     node_selector_value: enabled
-  worker: 
+  worker:
     node_selector_key: openstack-control-plane
     node_selector_value: enabled
-  web: 
+  web:
     node_selector_key: openstack-control-plane
     node_selector_value: enabled
   web-proxy:
+    node_selector_key: openstack-control-plane
+    node_selector_value: enabled
+  job:
     node_selector_key: openstack-control-plane
     node_selector_value: enabled
 
@@ -45,14 +48,16 @@ release_group: null
 images:
   tags:
      # TODO: check if these images are compatible:
+    bootstrap: docker.io/openstackhelm/heat:stein-ubuntu_bionic
     db_init: docker.io/openstackhelm/heat:stein-ubuntu_bionic
     db_drop: docker.io/openstackhelm/heat:stein-ubuntu_bionic
+    dep_check: quay.io/airshipit/kubernetes-entrypoint:v1.0.0
     # NOTE: db sync will be performed by the conductor on startup
     rabbit_init: docker.io/rabbitmq:3.7-management
     ks_user: docker.io/openstackhelm/heat:stein-ubuntu_bionic
     ks_service: docker.io/openstackhelm/heat:stein-ubuntu_bionic
     ks_endpoints: docker.io/openstackhelm/heat:stein-ubuntu_bionic
-    # TODO: update prefix:
+    coriolis_db_sync: registry.cloudbase.it/appliance/coriolis-conductor:latest
     coriolis_api: registry.cloudbase.it/appliance/coriolis-api:latest
     coriolis_conductor: registry.cloudbase.it/appliance/coriolis-conductor:latest
     coriolis_replica_cron: registry.cloudbase.it/appliance/coriolis-replica-cron:latest
@@ -60,11 +65,8 @@ images:
     coriolis_web: registry.cloudbase.it/appliance/coriolis-web:latest
     coriolis_web_proxy: registry.cloudbase.it/appliance/coriolis-web-proxy:latest
   pull_policy: "IfNotPresent"
-  # TODO: determine if these work:
   imageCredentials:
-    registry: registry.cloudbase.it
-    username:
-    password:
+    coriolisImagePullSecret: cbslreg
   local_registry:
     active: false
     exclude:
@@ -127,7 +129,7 @@ pod:
         coriolis_web_proxy:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
-  
+
   affinity:
     anti:
       type:
@@ -169,6 +171,11 @@ pod:
     coriolis_web_proxy:
       init_container: null
       coriolis_web_proxy:
+        volumeMounts:
+        volumes:
+    coriolis_db_sync:
+      init_container: null
+      coriolis_db_sync:
         volumeMounts:
         volumes:
 
@@ -257,14 +264,13 @@ pod:
         limits:
           memory: "1024Mi"
           cpu: "2000m"
-      # TODO: check:
-      #create_internal_tenant:
-      #  requests:
-      #    memory: "128Mi"
-      #    cpu: "100m"
-      #  limits:
-      #    memory: "1024Mi"
-      #    cpu: "2000m"
+      create_internal_tenant:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
       db_init:
         requests:
           memory: "128Mi"
@@ -405,6 +411,7 @@ conf:
       debug: true
       # TODO: abstract logging better:
       log_dir: /var/log/coriolis/
+      log_config_append: /etc/coriolis/logging.conf
       logging_exception_prefix: "%(asctime)s.%(msecs)03d TRACE %(name)s %(instance)s"
       logging_debug_format_suffix: "from (pid=%(process)d) %(funcName)s %(pathname)s:%(lineno)d"
       logging_default_format_string: "%(asctime)s.%(msecs)03d %(levelname)s %(name)s [-] %(instance)s%(message)s"
@@ -418,7 +425,10 @@ conf:
       cache_time: 86400
       use_syslog: yes
       syslog_log_facility: LOG_LOCAL0
-    
+
+      internal_project_name: internal_coriolis
+      internal_user_name: internal_coriolis
+
     cache:
       # TODO: enable caching
       enabled: false
@@ -427,7 +437,7 @@ conf:
 
     database:
       # NOTE: to be set by openstack-helm:
-      connection: 
+      connection:
       max_retries: -1
 
     keystone_authtoken:
@@ -487,8 +497,8 @@ conf:
         offer: UbuntuServer
         sku: 18.04-LTS
       windows_migr_image:
-        version: latest 
-        publisher: MicrosoftWindowsServer 
+        version: latest
+        publisher: MicrosoftWindowsServer
         offer: WindowsServer
         sku: 2016-Datacenter-Server-Core
       default_worker_size:
@@ -616,7 +626,7 @@ conf:
       vixdisklib_compatibility_version: 6.0
       # TODO: add mount for vixDiskLib:
       vixdisklib_library_directory: /lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu
-    
+
   logging:
     loggers:
       keys:
@@ -635,10 +645,10 @@ conf:
       level: WARNING
       handlers: stdout
     logger_coriolis:
-      level: DEBUG 
+      level: DEBUG
       handlers:
         - stdout
-      qualname: coriolis 
+      qualname: coriolis
     logger_amqp:
       level: WARNING
       handlers: stderr
@@ -681,7 +691,7 @@ conf:
   rabbitmq:
     #NOTE(rk760n): adding rmq policy to mirror messages from notification queues and set expiration time for the ones
     policies:
-      # TODO: check if these are necessary 
+      # TODO: check if these are necessary
       - vhost: "coriolis"
         name: "ha_ttl_coriolis"
         definition:
@@ -719,7 +729,6 @@ dependencies:
     common:
       local_image_registry:
         jobs:
-          # TODO: define:
           - coriolis-image-repo-sync
         services:
           - endpoint: node
@@ -783,7 +792,7 @@ dependencies:
         - requireSameNode: false
           labels:
             # NOTE: see what this reference points to:
-            application: coriolis 
+            application: coriolis
             component: volume
     clean:
       jobs: null
@@ -834,21 +843,18 @@ dependencies:
 # Names of secrets used by bootstrap and environmental checks:
 secrets:
   identity:
-    # TODO: check where all of these are referenced:
     admin: coriolis-keystone-admin
     coriolis: coriolis-keystone-user
-    test: coriolis-keystone-test
   oslo_db:
     admin: coriolis-db-admin
-    cinder: coriolis-db-user
+    coriolis: coriolis-db-user
   oslo_messaging:
     admin: coriolis-rabbitmq-admin
-    cinder: coriolis-rabbitmq-user
+    coriolis: coriolis-rabbitmq-user
   tls:
-    # TODO check where this might be used by openstack-helm:
-    volume:
+    migration:
       api:
-        public: cinder-tls-public
+        public: coriolis-tls-public
 
 # We use a different layout of the endpoints here to account for versioning
 # this swaps the service name and type, and should be rolled out to other
@@ -858,11 +864,11 @@ endpoints:
   # TODO: add web-proxy?
 
   cluster_domain_suffix: cluster.local
+
   local_image_registry:
     name: docker-registry
     namespace: docker-registry
     hosts:
-      # TODO: check if using these with registry.cloudbase.it works:
       default: localhost
       internal: docker-registry
       node: localhost
@@ -872,6 +878,7 @@ endpoints:
       registry:
         # TODO: add registry.cloudbase.it port too:
         node: 5000
+
   identity:
     name: keystone
     auth:
@@ -885,8 +892,7 @@ endpoints:
       coriolis:
         role: admin
         region_name: RegionOne
-        username: coriolis 
-        # TODO: check this:
+        username: coriolis
         password: password
         project_name: service
         user_domain_name: service
@@ -905,10 +911,10 @@ endpoints:
         default: 80
         internal: 5000
   migration:
-    name: coriolis 
+    name: coriolis
     hosts:
       default: coriolis-api
-      public: coriolis 
+      public: coriolis
     host_fqdn_override:
       default: null
       # NOTE(portdirect): this chart supports TLS for fqdn over-ridden public
@@ -924,7 +930,7 @@ endpoints:
       default: 'http'
     port:
       api:
-        default: 7667 
+        default: 7667
         public: 80
   oslo_db:
     auth:
@@ -933,7 +939,7 @@ endpoints:
         username: root
         password: password
       coriolis:
-        username: coriolis 
+        username: coriolis
         password: password
     hosts:
       default: mariadb
@@ -950,8 +956,8 @@ endpoints:
       admin:
         username: rabbitmq
         password: password
-      cinder:
-        username: coriolis 
+      coriolis:
+        username: coriolis
         password: password
     statefulset:
       replicas: 2
@@ -1026,8 +1032,8 @@ manifests:
   deployment_worker: true
 
   # TODO: enable web UI:
-  deployment_web: false 
-  deployment_web_proxy: false 
+  deployment_web: false
+  deployment_web_proxy: false
 
   # TODO: define these:
   ingress_api: true
@@ -1037,7 +1043,7 @@ manifests:
   job_db_init: true
   job_rabbit_init: true
   job_db_sync: true
-  job_db_drop: false
+  job_db_drop: true
   job_ks_endpoints: true
   job_ks_service: true
   job_ks_user: true

@@ -14,4 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
-{{/* NOTE: automatically handled by the Coriolis Conductor on startup. */}}
+{{- if .Values.manifests.job_db_sync }}
+{{- $dbSyncJob := dict "envAll" . "serviceName" "coriolis" "podVolMounts" .Values.pod.mounts.coriolis_db_sync.coriolis_db_sync.volumeMounts "podVols" .Values.pod.mounts.coriolis_db_sync.coriolis_db_sync.volumes -}}
+{{ $dbSyncJob | include "helm-toolkit.manifests.job_db_sync" }}
+{{- end }}

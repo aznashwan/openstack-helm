@@ -28,5 +28,5 @@ sources:
 maintainers:
     - name: Cloudbase Solutions SRL
       email: info@cloudbasesolutions.com
-
+icon: https://raw.githubusercontent.com/cloudbase/coriolis-web/master/src/components/atoms/Logo/images/coriolis-large.svg
 appVersion: 02.02.2020

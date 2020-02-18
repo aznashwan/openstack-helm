@@ -52,9 +52,10 @@ spec:
 {{ tuple $envAll "coriolis" "replica_cron" | include "helm-toolkit.snippets.kubernetes_pod_anti_affinity" | indent 8 }}
       nodeSelector:
         {{ .Values.labels.replica_cron.node_selector_key }}: {{ .Values.labels.replica_cron.node_selector_value }}
-      terminationGracePeriodSeconds: {{ .Values.pod.lifecycle.termination_grace_period.replica_cron.timeout | default "30" }}
       initContainers:
 {{ tuple $envAll "replica_cron" $mounts_coriolis_replica_cron_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
+      imagePullSecrets:
+      - name: {{ .Values.images.imageCredentials.coriolisImagePullSecret }}
       containers:
         - name: coriolis-replica-cron
 {{ tuple $envAll "coriolis_replica_cron" | include "helm-toolkit.snippets.image" | indent 10 }}
@@ -69,20 +70,6 @@ spec:
                 command:
                   - /tmp/coriolis-replica-cron.sh
                   - stop
-          ports:
-            - name: c-replica-cron
-              containerPort: {{ tuple "migration" "internal" "replica_cron" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
-          readinessProbe:
-            tcpSocket:
-              port: {{ tuple "migration" "internal" "replica_cron" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
-          livenessProbe:
-            tcpSocket:
-              port: {{ tuple "migration" "internal" "replica_cron" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
-            initialDelaySeconds: 30
-            failureThreshold: 3
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 1
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp

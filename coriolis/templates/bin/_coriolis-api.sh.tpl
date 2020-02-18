@@ -21,9 +21,7 @@ COMMAND="${@:-start}"
 
 function start () {
   exec coriolis-api \
-        --config-file /etc/coriolis/coriolis.conf \
-        --config-file /tmp/pod-shared/internal_tenant.conf
-  # TODO: determine merit of "internal_tenant.conf" above ^
+        --config-file /etc/coriolis/coriolis.conf
 }
 
 function stop () {

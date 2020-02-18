@@ -52,9 +52,10 @@ spec:
 {{ tuple $envAll "coriolis" "conductor" | include "helm-toolkit.snippets.kubernetes_pod_anti_affinity" | indent 8 }}
       nodeSelector:
         {{ .Values.labels.conductor.node_selector_key }}: {{ .Values.labels.conductor.node_selector_value }}
-      terminationGracePeriodSeconds: {{ .Values.pod.lifecycle.termination_grace_period.conductor.timeout | default "30" }}
       initContainers:
 {{ tuple $envAll "conductor" $mounts_coriolis_conductor_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
+      imagePullSecrets:
+      - name: {{ .Values.images.imageCredentials.coriolisImagePullSecret }}
       containers:
         - name: coriolis-conductor
 {{ tuple $envAll "coriolis_conductor" | include "helm-toolkit.snippets.image" | indent 10 }}
@@ -69,20 +70,6 @@ spec:
                 command:
                   - /tmp/coriolis-conductor.sh
                   - stop
-          ports:
-            - name: c-conductor
-              containerPort: {{ tuple "migration" "internal" "conductor" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
-          readinessProbe:
-            tcpSocket:
-              port: {{ tuple "migration" "internal" "conductor" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
-          livenessProbe:
-            tcpSocket:
-              port: {{ tuple "migration" "internal" "conductor" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
-            initialDelaySeconds: 30
-            failureThreshold: 3
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 1
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp

@@ -16,22 +16,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
+{{- $envAll := . }}
+
 set -ex
 COMMAND="${@:-start}"
 
 function start () {
   exec coriolis-api \
-        --config-file /etc/coriolis/coriolis.conf \
-        --config-file /tmp/pod-shared/internal_tenant.conf
-        # TODO: determine merit of "internal_tenant.conf" above ^
-{{- range $prv := .Values.providers.source }}
-        {{- printf "--config-file /etc/coriolis/plugins/%s_migration_provider.conf" $prv }}
+{{- range $prv := $envAll.Values.providers.source }}
+        {{- printf "--config-file /etc/coriolis/plugins/%s_migration_provider.conf \\" $prv }}
 {{- end }}
-{{- range $prv := .Values.providers.destination }}
-{{- if not (has $prv .Values.providers.source) }}
-        {{- printf "--config-file /etc/coriolis/plugins/%s_migration_provider.conf" $prv }}
+{{- range $prv := $envAll.Values.providers.destination }}
+{{- if not (has $prv $envAll.Values.providers.source) }}
+        {{- printf "--config-file /etc/coriolis/plugins/%s_migration_provider.conf \\" $prv }} 
 {{- end }}
 {{- end }}
+        --config-file /etc/coriolis/coriolis.conf
 {{/*
 # NOTE(aznashwan): `concat` does not work in Helm < 3 so we need to double-iterate like above ^
 {{- range $prv := concat .Values.providers.source .Values.providers.destination | uniq}}
