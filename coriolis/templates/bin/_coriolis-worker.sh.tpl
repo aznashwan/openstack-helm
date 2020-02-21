@@ -22,22 +22,21 @@ set -ex
 COMMAND="${@:-start}"
 
 function start () {
-  exec coriolis-api \
+  exec coriolis-worker \
 {{- range $prv := $envAll.Values.providers.source }}
-        {{- printf "--config-file /etc/coriolis/plugins/%s_migration_provider.conf \\" $prv }}
+  {{- printf "--config-file /etc/coriolis/providers/%s_migration_provider.conf \\\n" $prv | indent 2 }}
 {{- end }}
 {{- range $prv := $envAll.Values.providers.destination }}
 {{- if not (has $prv $envAll.Values.providers.source) }}
-        {{- printf "--config-file /etc/coriolis/plugins/%s_migration_provider.conf \\" $prv }} 
-{{- end }}
-{{- end }}
-        --config-file /etc/coriolis/coriolis.conf
+  {{- printf "--config-file /etc/coriolis/providers/%s_migration_provider.conf \\\n" $prv | indent 2 }}
+{{- end }}{{- end }}
+  --config-file /etc/coriolis/coriolis.conf
+}
 {{/*
 # NOTE(aznashwan): `concat` does not work in Helm < 3 so we need to double-iterate like above ^
 {{- range $prv := concat .Values.providers.source .Values.providers.destination | uniq}}
-        {{- printf "--config-file /etc/coriolis/plugins/%s_migration_provider.conf" $prv }}
+        {{- printf "--config-file /etc/coriolis/providers/%s_migration_provider.conf" $prv }}
 {{- end }}
-}
 */}}
 
 function stop () {

@@ -81,26 +81,35 @@ spec:
               mountPath: /etc/coriolis/coriolis.conf
               subPath: coriolis.conf
               readOnly: true
-{{- range $prv := $envAll.Values.providers.source }}
+            {{- if .Values.conf.coriolis.DEFAULT.log_config_append }}
             - name: coriolis-etc
-              mountPath: {{- printf " /etc/coriolis/providers/coriolis_provider_%s.conf" $prv }}
-              subPath: {{- printf " coriolis_provider_%s.conf" $prv }}
+              mountPath: {{ .Values.conf.coriolis.DEFAULT.log_config_append }}
+              subPath: {{ base .Values.conf.coriolis.DEFAULT.log_config_append }}
+              readOnly: true
+            {{- end }}
+{{- range $prv := $envAll.Values.providers.source }}
+{{- $confLabel := printf "%s_migration_provider" $prv }}
+            - name: coriolis-etc
+              mountPath: {{- printf " /etc/coriolis/providers/%s.conf" $confLabel }}
+              subPath: {{- printf " %s.conf" $confLabel }}
               readOnly: true
 {{- end}}
 {{- range $prv := $envAll.Values.providers.destination }}
 {{- if not (has $prv $envAll.Values.providers.source) }}
+{{- $confLabel := printf "%s_migration_provider" $prv }}
             - name: coriolis-etc
-              mountPath: {{- printf " /etc/coriolis/providers/coriolis_provider_%s.conf" $prv }}
-              subPath: {{- printf " coriolis_provider_%s.conf" $prv }}
+              mountPath: {{- printf " /etc/coriolis/providers/%s.conf" $confLabel }}
+              subPath: {{- printf " %s.conf" $confLabel }}
               readOnly: true
 {{- end}}
 {{- end}}
 {{/*
 # NOTE: `concat` does not work in Helm < 3 so we must double-iterate like above ^
 {{- range $prv := concat .Values.providers.source .Values.providers.destination | uniq }}
+{{- $confLabel := printf "%s_migration_provider" $prv }}
             - name: coriolis-etc
-              mountPath: {{- printf " /etc/coriolis/providers/coriolis_provider_%s.conf" $prv }}
-              subPath: {{- printf " coriolis_provider_%s.conf" $prv }}
+              mountPath: {{- printf " /etc/coriolis/providers/%s.conf" $confLabel }}
+              subPath: {{- printf " %s.conf" $confLabel }}
               readOnly: true
 {{- end}}
 */}}

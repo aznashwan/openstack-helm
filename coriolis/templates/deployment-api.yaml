@@ -96,6 +96,12 @@ spec:
               mountPath: /etc/coriolis/coriolis.conf
               subPath: coriolis.conf
               readOnly: true
+            {{- if .Values.conf.coriolis.DEFAULT.log_config_append }}
+            - name: coriolis-etc
+              mountPath: {{ .Values.conf.coriolis.DEFAULT.log_config_append }}
+              subPath: {{ base .Values.conf.coriolis.DEFAULT.log_config_append }}
+              readOnly: true
+            {{- end }}
             - name: coriolis-etc
               mountPath: /etc/coriolis/api-paste.ini
               subPath: api-paste.ini

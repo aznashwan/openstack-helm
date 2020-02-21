@@ -82,13 +82,13 @@ pod:
         coriolis_api:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
+          runAsUser: 0
     coriolis_conductor:
       pod:
         runAsUser: 42424
       container:
         coriolis_conductor:
           redOnlyRootFilesystem: true
-          # TODO: ???
           runAsUser: 0
     coriolis_replica_cron:
       pod:
@@ -97,6 +97,7 @@ pod:
         coriolis_replica_cron:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
+          runAsUser: 0
     coriolis_worker:
       pod:
         runAsUser: 42424
@@ -108,6 +109,7 @@ pod:
         coriolis_worker:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
+          runAsUser: 0
         # TODO:
         # - define check/create/mount external bin dir
     coriolis_web:
@@ -121,6 +123,7 @@ pod:
         coriolis_web:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
+          runAsUser: 0
     coriolis_web_proxy:
         # TODO: define:
         init_coriolis_web_proxy_conf:
@@ -129,6 +132,7 @@ pod:
         coriolis_web_proxy:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
+          runAsUser: 0
 
   affinity:
     anti:
@@ -463,169 +467,177 @@ conf:
       worker_rpc_timeout: 60
 
   providers:
-    aws_migration_provider:
-      migr_image_map:
-      migr_image_username_map:
-      worker_instance_type: t2.medium
-      shutdown_migrated_instance: false
-      instance_type:
-      retain_source_ip: false
-      default_storage_type: standard
-      availability_zone: az1
+    aws:
+      aws_migration_provider:
+        migr_image_map:
+        migr_image_username_map:
+        worker_instance_type: t2.medium
+        shutdown_migrated_instance: false
+        instance_type:
+        retain_source_ip: false
+        default_storage_type: standard
+        availability_zone: az1
 
-    azure_migration_provider:
-      export_location: westus
-      export_worker_size: Standard_D1
-      export_worker_image:
-        version: latest
-        publisher: Canonical
-        offer: UbuntuServer
-        sku: 18.04-LTS
-      export_arm_resource_api_version:
-      export_arm_compute_api_version:
-      export_arm_network_api_version:
-      export_blob_storage_api_version:
+    azure:
+      azure_migration_provider:
+        export_location: westus
+        export_worker_size: Standard_D1
+        export_worker_image:
+          version: latest
+          publisher: Canonical
+          offer: UbuntuServer
+          sku: 18.04-LTS
+        export_arm_resource_api_version:
+        export_arm_compute_api_version:
+        export_arm_network_api_version:
+        export_blob_storage_api_version:
 
-      migr_location: westus
-      storage_account_name:
-      storage_container_name:
-      disk_storage_backing_type:
-      default_vm_size:
-      linux_migr_image:
-        version: latest
-        publisher: Canonical
-        offer: UbuntuServer
-        sku: 18.04-LTS
-      windows_migr_image:
-        version: latest
-        publisher: MicrosoftWindowsServer
-        offer: WindowsServer
-        sku: 2016-Datacenter-Server-Core
-      default_worker_size:
-      preserve_nic_ips: true
-      arm_resource_api_version:
-      arm_compute_api_version:
-      arm_network_api_version:
-      blob_storage_api_version:
-      arm_storage_api_version:
+        migr_location: westus
+        storage_account_name:
+        storage_container_name:
+        disk_storage_backing_type:
+        default_vm_size:
+        linux_migr_image:
+          version: latest
+          publisher: Canonical
+          offer: UbuntuServer
+          sku: 18.04-LTS
+        windows_migr_image:
+          version: latest
+          publisher: MicrosoftWindowsServer
+          offer: WindowsServer
+          sku: 2016-Datacenter-Server-Core
+        default_worker_size:
+        preserve_nic_ips: true
+        arm_resource_api_version:
+        arm_compute_api_version:
+        arm_network_api_version:
+        blob_storage_api_version:
+        arm_storage_api_version:
 
-      cloudbaseinit_x86_url: https://www.cloudbase.it/downloads/CloudbaseInitSetup_x86.zip
-      cloudbaseinit_x64_url: https://www.cloudbase.it/downloads/CloudbaseInitSetup_x64.zip
+        cloudbaseinit_x86_url: https://www.cloudbase.it/downloads/CloudbaseInitSetup_x86.zip
+        cloudbaseinit_x64_url: https://www.cloudbase.it/downloads/CloudbaseInitSetup_x64.zip
 
-    oci_migration_provider:
-      migr_image_map:
-        linux:
-        windows:
-      default_to_pv_mode: true
-      shape_name: VM.Standard1.2
-      migr_shape_name: VM.Standard1.2
-      migr_subnet_id:
-      compartment:
-      set_public_ip:
-      default_attach_type:
-      windows_virtio_zip_url:
+    oci:
+      oci_migration_provider:
+        migr_image_map:
+          linux:
+          windows:
+        default_to_pv_mode: true
+        shape_name: VM.Standard1.2
+        migr_shape_name: VM.Standard1.2
+        migr_subnet_id:
+        compartment:
+        set_public_ip:
+        default_attach_type:
+        windows_virtio_zip_url:
 
-    opc_migration_provider:
-      export_image_name: /oracle/public/OL_7.2_UEKR4_x86_64
-      export_img_username:
-      export_shape_name: oc3
-      export_root_disk_size: 150
-      shape_name: oc3
+    opc:
+      opc_migration_provider:
+        export_image_name: /oracle/public/OL_7.2_UEKR4_x86_64
+        export_img_username:
+        export_shape_name: oc3
+        export_root_disk_size: 150
+        shape_name: oc3
 
-      migr_image_map:
-        linux: /oracle/public/OL_7.5_UEKR4_x86_64_MIGRATION
-        windows:
-      migr_shape_name: oc3
-      default_volume_pool: /oracle/public/storage/default
-      migr_network_name:
-      windows_pv_drivers_url: https://cloudbase.it/downloads/app/ovm/ovm_win_pv_drivers_all_323_bare_root.zip
+        migr_image_map:
+          linux: /oracle/public/OL_7.5_UEKR4_x86_64_MIGRATION
+          windows:
+        migr_shape_name: oc3
+        default_volume_pool: /oracle/public/storage/default
+        migr_network_name:
+        windows_pv_drivers_url: https://cloudbase.it/downloads/app/ovm/ovm_win_pv_drivers_all_323_bare_root.zip
 
-    openstack_migration_provider:
-      replica_export_mechanism: coriolis_backups
-      glance_api_version: 1
-      allow_untrusted_swift: false
-      custom_os_type_map:
-      volume_backups_container:
-      cinder_ceph_timeout: 30
-      cinder_ceph_backups_diff_hash_algorithm:
-      export_image:
-      export_interim_volume_type:
-      export_worker_boot_from_volume:
-      export_worker_volume_type:
-      export_worker_volume_size:
-      export_flavor_name:
-      export_network:
-      export_worker_use_fip:
-      export_fip_pool_name:
-      export_worker_use_config_drive:
+    openstack:
+      openstack_migration_provider:
+        replica_export_mechanism: coriolis_backups
+        glance_api_version: 1
+        allow_untrusted_swift: false
+        custom_os_type_map:
+        volume_backups_container:
+        cinder_ceph_timeout: 30
+        cinder_ceph_backups_diff_hash_algorithm:
+        export_image:
+        export_interim_volume_type:
+        export_worker_boot_from_volume:
+        export_worker_volume_type:
+        export_worker_volume_size:
+        export_flavor_name:
+        export_network:
+        export_worker_use_fip:
+        export_fip_pool_name:
+        export_worker_use_config_drive:
 
-      delete_disks_on_vm_termination: true
-      migr_image_map:
-      list_all_destination_networks:
-      volumes_are_zeroed:
-      hypervisor_type:
-      migr_worker_boot_from_volume: false
-      migr_worker_volume_size:
-      migr_worker_volume_type:
-      default_cinder_volume_type:
-      default_security_groups:
-      migr_network:
-      migr_worker_use_fip: true
-      migr_fip_pool_name:
-      migr_flavor_name:
-      migr_worker_use_config_drive:
-      set_dhcp: true
-      port_reuse_policy: keep_mac
-      preserve_fixed_ips: false
-      instance_tags:
-      use_floating_ip: false
-      floating_ip_pool:
-      server_group:
-      windows_virtio_iso_url: https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso
-      cloudbaseinit_x64_url: https://www.cloudbase.it/downloads/CloudbaseInitSetup_x64.zip
-      cloudbaseinit_x86_url: https://www.cloudbase.it/downloads/CloudbaseInitSetup_x86.zip
+        delete_disks_on_vm_termination: true
+        migr_image_map:
+        list_all_destination_networks:
+        volumes_are_zeroed:
+        hypervisor_type:
+        migr_worker_boot_from_volume: false
+        migr_worker_volume_size:
+        migr_worker_volume_type:
+        default_cinder_volume_type:
+        default_security_groups:
+        migr_network:
+        migr_worker_use_fip: true
+        migr_fip_pool_name:
+        migr_flavor_name:
+        migr_worker_use_config_drive:
+        set_dhcp: true
+        port_reuse_policy: keep_mac
+        preserve_fixed_ips: false
+        instance_tags:
+        use_floating_ip: false
+        floating_ip_pool:
+        server_group:
+        windows_virtio_iso_url: https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso
+        cloudbaseinit_x64_url: https://www.cloudbase.it/downloads/CloudbaseInitSetup_x64.zip
+        cloudbaseinit_x86_url: https://www.cloudbase.it/downloads/CloudbaseInitSetup_x86.zip
 
-    oracle_vm_migration_provider:
-      export_template:
-      export_template_username:
-      export_template_password:
+    oracle_vm:
+      oracle_vm_migration_provider:
+        export_template:
+        export_template_username:
+        export_template_password:
 
-      migr_template_map:
-        linux:
-        windows:
-      migr_template_username_map:
-        linux:
-        windows:
-      migr_template_password_map:
-        linux:
-        windows:
-      migr_network_name:
-      server_pool_name:
-      repository_name:
-      leave_migrated_vm_off: false
-      vm_domain_type: XEN_HVM_PV_DRIVERS
-      virtual_disk_clone_type: THIN_CLONE
-      cloudbaseinit_x86_url: https://www.cloudbase.it/downloads/CloudbaseInitSetup_x86.zip
-      cloudbaseinit_x64_url: https://www.cloudbase.it/downloads/CloudbaseInitSetup_x64.zip
-      windows_pv_drivers_url: https://cloudbase.it/downloads/app/ovm/ovm_win_pv_drivers_all_323_bare_root.zip
+        migr_template_map:
+          linux:
+          windows:
+        migr_template_username_map:
+          linux:
+          windows:
+        migr_template_password_map:
+          linux:
+          windows:
+        migr_network_name:
+        server_pool_name:
+        repository_name:
+        leave_migrated_vm_off: false
+        vm_domain_type: XEN_HVM_PV_DRIVERS
+        virtual_disk_clone_type: THIN_CLONE
+        cloudbaseinit_x86_url: https://www.cloudbase.it/downloads/CloudbaseInitSetup_x86.zip
+        cloudbaseinit_x64_url: https://www.cloudbase.it/downloads/CloudbaseInitSetup_x64.zip
+        windows_pv_drivers_url: https://cloudbase.it/downloads/app/ovm/ovm_win_pv_drivers_all_323_bare_root.zip
 
-    scvmm_migration_provider:
-      fallback_to_crash_consistent_snapshots: true
-      verify_rct_server: false
+    scvmm:
+      scvmm_migration_provider:
+        fallback_to_crash_consistent_snapshots: true
+        verify_rct_server: false
 
-      migr_template_name_map:
-        linux:
-        windows:
-      migr_template_username_map:
-        linux:
-        windows:
-      cloud_name:
+        migr_template_name_map:
+          linux:
+          windows:
+        migr_template_username_map:
+          linux:
+          windows:
+        cloud_name:
 
-    vmware_vsphere_migration_provider:
-      automatically_enable_cbt: false
-      vixdisklib_compatibility_version: 6.0
-      # TODO: add mount for vixDiskLib:
-      vixdisklib_library_directory: /lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu
+    vmware_vsphere:
+      vmware_vsphere_migration_provider:
+        automatically_enable_cbt: false
+        vixdisklib_compatibility_version: 6.0
+        # TODO: add mount for vixDiskLib:
+        vixdisklib_library_directory: /lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu
 
   logging:
     loggers:
