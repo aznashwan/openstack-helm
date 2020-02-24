@@ -16,7 +16,7 @@ limitations under the License.
 
 {{- if .Values.manifests.configmap_etc }}
 {{- $envAll := . }}
-{{- $providerConf := $envAll.Values.conf.providers }}
+{{- $providersConf := $envAll.Values.conf.providers }}
 
 {{- if empty .Values.conf.coriolis.keystone_authtoken.auth_uri -}}
 {{- $_ := tuple "identity" "internal" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup"| set .Values.conf.coriolis.keystone_authtoken "auth_uri" -}}
@@ -105,11 +105,13 @@ data:
   api-paste.ini: {{ include "helm-toolkit.utils.to_ini" .Values.conf.paste | b64enc }}
   policy.json: {{ toJson .Values.conf.policy | b64enc }}
 {{- range $prv := $envAll.Values.providers.source }}
-  {{ printf $providerConf.provider_conf_file_name_format $prv }}: {{ index $providerConf $prv | b64enc }}
+  {{- $conf := index $providersConf $prv }}
+  {{ printf $providersConf.provider_conf_file_name_format $prv }}: {{ index $conf "conf" | b64enc }}
 {{- end }}
 {{- range $prv := $envAll.Values.providers.destination }}
 {{- if not (has $prv $envAll.Values.providers.source) }}
-  {{ printf $providerConf.provider_conf_file_name_format $prv }}: {{ index $providerConf $prv | b64enc }}
+  {{- $conf := index $providersConf $prv }}
+  {{ printf $providersConf.provider_conf_file_name_format $prv }}: {{ index $conf "conf" | b64enc }}
 {{- end }}
 {{- end }}
 {{- end }}
