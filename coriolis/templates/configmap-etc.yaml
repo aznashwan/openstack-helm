@@ -71,6 +71,28 @@ limitations under the License.
 {{- $_ := tuple "oslo_messaging" "internal" "coriolis" "amqp" . | include "helm-toolkit.endpoints.authenticated_transport_endpoint_uri_lookup" | set .Values.conf.coriolis.DEFAULT "messaging_transport_url" -}}
 {{- end -}}
 
+{{- if empty .Values.conf.coriolis.DEFAULT.providers -}}
+{{- $prvList := "" }}
+{{- range $prv := $envAll.Values.providers.source }}
+  {{- $prvCls := printf "coriolis_provider_%s.ExportProvider" $prv }}
+  {{- if (eq $prvList "") }}
+  {{- $prvList = $prvCls }}
+  {{- else }}
+  {{- $prvList = printf "%s, %s" $prvList $prvCls }}
+  {{- end }}
+{{- end }}
+{{- range $prv := $envAll.Values.providers.destination }}
+  {{- $prvCls := printf "coriolis_provider_%s.ImportProvider" $prv }}
+  {{- if (eq $prvList "") }}
+  {{- $prvList = $prvCls }}
+  {{- else }}
+  {{- $prvList = printf "%s, %s" $prvList $prvCls }}
+  {{- end }}
+{{- end }}
+{{- set $envAll.Values.conf.coriolis.DEFAULT "providers" $prvList }}
+{{- end }}
+
+
 ---
 apiVersion: v1
 kind: Secret
@@ -83,11 +105,11 @@ data:
   api-paste.ini: {{ include "helm-toolkit.utils.to_ini" .Values.conf.paste | b64enc }}
   policy.json: {{ toJson .Values.conf.policy | b64enc }}
 {{- range $prv := $envAll.Values.providers.source }}
-  {{- printf $providerConf.provider_conf_file_name_format $prv }}: {{ get $providerConf $prv | b64enc }}
+  {{ printf $providerConf.provider_conf_file_name_format $prv }}: {{ index $providerConf $prv | b64enc }}
 {{- end }}
 {{- range $prv := $envAll.Values.providers.destination }}
 {{- if not (has $prv $envAll.Values.providers.source) }}
-  {{- printf $providerConf.provider_conf_file_name_format $prv }}: {{ get $providerConf $prv | b64enc }}
+  {{ printf $providerConf.provider_conf_file_name_format $prv }}: {{ index $providerConf $prv | b64enc }}
 {{- end }}
 {{- end }}
 {{- end }}

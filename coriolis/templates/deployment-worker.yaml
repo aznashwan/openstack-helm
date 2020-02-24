@@ -91,16 +91,16 @@ spec:
 {{- range $prv := $envAll.Values.providers.source }}
 {{- $confFile := printf $providerConf.provider_conf_file_name_format $prv }}
             - name: coriolis-etc
-              mountPath: {{- printf " %s/%s" $providerConf.provider_conf_file_mount_dir $confFile }}
-              subPath: $confFile
+              mountPath: {{ printf " %s/%s" $providerConf.provider_conf_file_mount_dir $confFile }}
+              subPath: {{ $confFile }}
               readOnly: true
 {{- end}}
 {{- range $prv := $envAll.Values.providers.destination }}
 {{- if not (has $prv $envAll.Values.providers.source) }}
 {{- $confFile := printf $providerConf.provider_conf_file_name_format $prv }}
             - name: coriolis-etc
-              mountPath: {{- printf " %s/%s" $providerConf.provider_conf_file_mount_dir $confFile }}
-              subPath: $confFile
+              mountPath: {{ printf " %s/%s" $providerConf.provider_conf_file_mount_dir $confFile }}
+              subPath: {{ $confFile }}
               readOnly: true
 {{- end}}
 {{- end}}
@@ -109,8 +109,8 @@ spec:
 {{- range $prv := concat .Values.providers.source .Values.providers.destination | uniq }}
 {{- $confFile := printf $providerConf.provider_conf_file_name_format $prv }}
             - name: coriolis-etc
-              mountPath: {{- printf " %s/%s" $providerConf.provider_conf_file_mount_dir $confFile }}
-              subPath: $confFile
+              mountPath: {{ printf " %s/%s" $providerConf.provider_conf_file_mount_dir $confFile }}
+              subPath: {{ $confFile }}
               readOnly: true
 {{- end}}
 */}}

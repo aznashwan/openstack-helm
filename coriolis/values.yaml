@@ -8,7 +8,6 @@ providers:
     - openstack
     - opc
     - oracle_vm
-    - scvmm
     - vmware_vsphere
   destination:
     - aws
@@ -332,7 +331,6 @@ bootstrap:
 
 network:
   api:
-    # TODO: what are these???
     ingress:
       public: true
       classes:
@@ -343,7 +341,7 @@ network:
     external_policy_local: false
     node_port:
       enabled: false
-      port: 30877
+      port: 30667
 
 conf:
   paste:
@@ -408,6 +406,7 @@ conf:
   coriolis:
     DEFAULT:
       # NOTE: will be set by openstack-helm:
+      providers:
       transport_url:
       messaging_transport_url:
       default_messaging_timeout: 60
@@ -1372,7 +1371,6 @@ endpoints:
     port:
       memcache:
         default: 11211
-  # TODO: check what these are for and use them:
   kube_dns:
     namespace: kube-system
     name: kubernetes-dns
@@ -1397,7 +1395,6 @@ endpoints:
         default: 80
 
 network_policy:
-  # TODO: check what these are for:
   coriolis:
     ingress:
       - {}
@@ -1405,7 +1402,6 @@ network_policy:
       - {}
 
 manifests:
-  # TODO: check where these are needed:
   configmap_bin: true
   configmap_etc: true
 
@@ -1418,7 +1414,6 @@ manifests:
   deployment_web: false
   deployment_web_proxy: false
 
-  # TODO: define these:
   ingress_api: true
   job_bootstrap: true
   job_clean: true
@@ -1432,7 +1427,6 @@ manifests:
   job_ks_user: true
   job_storage_init: true
 
-  # TODO: determine if these are needed:
   #pdb_api: true
   #pod_rally_test: true
   #pvc_backup: true

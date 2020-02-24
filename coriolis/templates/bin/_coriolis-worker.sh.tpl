@@ -26,20 +26,20 @@ function start () {
   exec coriolis-worker \
 {{- range $prv := $envAll.Values.providers.source }}
 {{- $confFile := printf $providerConf.provider_conf_file_name_format $prv }}
-  {{- printf "--config-file %s/%s \\\n" $providerConf.provider_conf_file_mount_dir $confFile | indent 2 }}
+{{ printf "--config-file %s/%s \\" $providerConf.provider_conf_file_mount_dir $confFile | indent 4 }}
 {{- end }}
 {{- range $prv := $envAll.Values.providers.destination }}
 {{- if not (has $prv $envAll.Values.providers.source) }}
 {{- $confFile := printf $providerConf.provider_conf_file_name_format $prv }}
-  {{- printf "--config-file %s/%s \\\n" $providerConf.provider_conf_file_mount_dir $confFile | indent 2 }}
+{{ printf "--config-file %s/%s \\" $providerConf.provider_conf_file_mount_dir $confFile | indent 4 }}
 {{- end }}{{- end }}
-  --config-file /etc/coriolis/coriolis.conf
+    --config-file /etc/coriolis/coriolis.conf
 }
 {{/*
 # NOTE(aznashwan): `concat` does not work in Helm < 3 so we need to double-iterate like above ^
 {{- range $prv := concat .Values.providers.source .Values.providers.destination | uniq}}
-{{- $confFile := printf $envAll.conf.providers.provider_conf_file_name_format $prv }}
-  {{- printf "--config-file %s/%s \\\n" $envAll.conf.providers.provider_conf_file_mount_dir $confFile | indent 2 }}
+{{- $confFile := printf $.providerConf.provider_conf_file_name_format $prv }}
+  {{ printf "--config-file %s/%s \\" $providerConf.providers.provider_conf_file_mount_dir $confFile | indent 2 }}
 
 {{- end }}
 */}}

@@ -72,7 +72,7 @@ spec:
                   - /tmp/coriolis-api.sh
                   - stop
           ports:
-            - name: coriolis-api
+            - name: cor-api
               containerPort: {{ tuple "migration" "internal" "api" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
           readinessProbe:
             tcpSocket:
