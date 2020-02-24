@@ -16,6 +16,7 @@ limitations under the License.
 
 {{- if .Values.manifests.deployment_worker }}
 {{- $envAll := . }}
+{{- $providerConf := $envAll.Values.conf.providers }}
 
 {{- $mounts_coriolis_worker := .Values.pod.mounts.coriolis_worker.coriolis_worker }}
 {{- $mounts_coriolis_worker_init := .Values.pod.mounts.coriolis_worker.init_container }}
@@ -88,28 +89,28 @@ spec:
               readOnly: true
             {{- end }}
 {{- range $prv := $envAll.Values.providers.source }}
-{{- $confLabel := printf "%s_migration_provider" $prv }}
+{{- $confFile := printf $providerConf.provider_conf_file_name_format $prv }}
             - name: coriolis-etc
-              mountPath: {{- printf " /etc/coriolis/providers/%s.conf" $confLabel }}
-              subPath: {{- printf " %s.conf" $confLabel }}
+              mountPath: {{- printf " %s/%s" $providerConf.provider_conf_file_mount_dir $confFile }}
+              subPath: $confFile
               readOnly: true
 {{- end}}
 {{- range $prv := $envAll.Values.providers.destination }}
 {{- if not (has $prv $envAll.Values.providers.source) }}
-{{- $confLabel := printf "%s_migration_provider" $prv }}
+{{- $confFile := printf $providerConf.provider_conf_file_name_format $prv }}
             - name: coriolis-etc
-              mountPath: {{- printf " /etc/coriolis/providers/%s.conf" $confLabel }}
-              subPath: {{- printf " %s.conf" $confLabel }}
+              mountPath: {{- printf " %s/%s" $providerConf.provider_conf_file_mount_dir $confFile }}
+              subPath: $confFile
               readOnly: true
 {{- end}}
 {{- end}}
 {{/*
 # NOTE: `concat` does not work in Helm < 3 so we must double-iterate like above ^
 {{- range $prv := concat .Values.providers.source .Values.providers.destination | uniq }}
-{{- $confLabel := printf "%s_migration_provider" $prv }}
+{{- $confFile := printf $providerConf.provider_conf_file_name_format $prv }}
             - name: coriolis-etc
-              mountPath: {{- printf " /etc/coriolis/providers/%s.conf" $confLabel }}
-              subPath: {{- printf " %s.conf" $confLabel }}
+              mountPath: {{- printf " %s/%s" $providerConf.provider_conf_file_mount_dir $confFile }}
+              subPath: $confFile
               readOnly: true
 {{- end}}
 */}}
