@@ -57,6 +57,8 @@ images:
     ks_service: docker.io/openstackhelm/heat:stein-ubuntu_bionic
     ks_endpoints: docker.io/openstackhelm/heat:stein-ubuntu_bionic
     coriolis_db_sync: registry.cloudbase.it/appliance/coriolis-conductor:latest
+    # TODO: find smaller image with `wget` and `tar` installed to use for this:
+    coriolis_vixdisklib_init: registry.cloudbase.it/appliance/coriolis-api:latest
     coriolis_api: registry.cloudbase.it/appliance/coriolis-api:latest
     coriolis_conductor: registry.cloudbase.it/appliance/coriolis-conductor:latest
     coriolis_replica_cron: registry.cloudbase.it/appliance/coriolis-replica-cron:latest
@@ -98,10 +100,14 @@ pod:
           allowPrivilegeEscalation: false
           runAsUser: 0
     coriolis_worker:
+      coriolis_worker_opt_path: /opt/coriolis
       pod:
         runAsUser: 42424
       container:
         # TODO: do init stuff like downloading/setting vixDiskLib
+        init_coriolis_vixdisklib:
+          runAsUser: 0
+          readOnlyRootFilesystem: false
         init_coriolis_conf:
           runAsUser: 0
           readOnlyRootFilesystem: true

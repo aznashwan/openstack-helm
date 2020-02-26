@@ -60,3 +60,8 @@ data:
   rabbit-init.sh: |
 {{- include "helm-toolkit.scripts.rabbit_init" . | indent 4 }}
 {{- end }}
+
+{{- if (has "vmware_vsphere" .Values.providers.source) }}
+  coriolis-setup-vix.sh: |
+{{ tuple "bin/_coriolis_setup_vix.sh.tpl" . | include "helm-toolkit.utils.template" | indent 4 }}
+{{- end }}

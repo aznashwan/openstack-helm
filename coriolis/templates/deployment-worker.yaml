@@ -54,6 +54,32 @@ spec:
       nodeSelector:
         {{ .Values.labels.worker.node_selector_key }}: {{ .Values.labels.worker.node_selector_value }}
       initContainers:
+{{- if (has "vmware_vsphere" .Values.providers.source) }}
+        - name: vixdisklib-init
+{{ tuple $envAll "coriolis_vixdisklib_init" | include "helm-toolkit.snippets.image" | indent 10 }}
+          command:
+            - /tmp/coriolis-setup-vix.sh
+{{ dict "envAll" $envAll "application" "coriolis_worker" "container" "init_coriolis_vixdisklib" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: coriolis-bin
+              mountPath: /tmp/coriolis-setup-vix.sh
+              subPath: coriolis-setup-vix.sh
+              readOnly: true
+            - name: coriolis-worker-vixdisklib
+              mountPath: {{ .Values.conf.providers.vmware_vsphere.vix_disklib_mount_dir }}
+              readOnly: false
+          volumes:
+            - name: pod-tmp
+              emptyDir: {}
+            - name: coriolis-worker-vixdisklib
+              emptyDir: {}
+            - name: coriolis-bin
+              configMap:
+                name: coriolis-bin
+                defaultMode: 0600
+{{- end }}
 {{ tuple $envAll "worker" $mounts_coriolis_worker_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
       imagePullSecrets:
       - name: {{ .Values.images.imageCredentials.coriolisImagePullSecret }}
@@ -88,6 +114,11 @@ spec:
               subPath: {{ base .Values.conf.coriolis.DEFAULT.log_config_append }}
               readOnly: true
             {{- end }}
+{{- if (has "vmware_vsphere" .Values.providers.source) }}
+            - name: coriolis-worker-vixdisklib
+              mountPath: {{ .Values.conf.providers.vmware_vsphere.vix_disklib_mount_dir }}
+              readOnly: true
+{{- end }}
 {{- range $prv := $envAll.Values.providers.source }}
 {{- $confFile := printf $providerConf.provider_conf_file_name_format $prv }}
             - name: coriolis-etc
@@ -128,6 +159,10 @@ spec:
           secret:
             secretName: coriolis-etc
             defaultMode: 0444
+{{- if (has "vmware_vsphere" .Values.providers.source) }}
+        - name: coriolis-worker-vixdisklib
+          emptyDir: {}
+{{- end }}
 {{ if $mounts_coriolis_worker.volumes }}{{ toYaml $mounts_coriolis_worker.volumes | indent 8 }}
 {{ end }}
 {{- end }}
