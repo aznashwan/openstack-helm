@@ -20,8 +20,10 @@ set -ex
 COMMAND="${@:-start}"
 
 function start () {
-  rm -rf /var/run/apache2/*
-  /usr/sbin/apachectl -DFOREGROUND
+    CERTDIR="{{ .Values.conf.coriolis_web_proxy.proxy_ssl_certs_dir }}"
+    exec openssl req -new -newkey rsa:4096 -days 820 -nodes -x509 \
+        -subj "/C=RO/ST=Timis/L=Timisoara/CN=Coriolis Self Signed" \
+        -keyout "$CERTDIR/coriolis.key" -out "$CERTDIR/coriolis.crt"
 }
 
 function stop () {

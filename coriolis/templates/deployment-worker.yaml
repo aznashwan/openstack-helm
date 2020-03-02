@@ -54,6 +54,7 @@ spec:
       nodeSelector:
         {{ .Values.labels.worker.node_selector_key }}: {{ .Values.labels.worker.node_selector_value }}
       initContainers:
+{{ tuple $envAll "worker" $mounts_coriolis_worker_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
 {{- if (has "vmware_vsphere" .Values.providers.source) }}
         - name: vixdisklib-init
 {{ tuple $envAll "coriolis_vixdisklib_init" | include "helm-toolkit.snippets.image" | indent 10 }}
@@ -80,7 +81,6 @@ spec:
                 name: coriolis-bin
                 defaultMode: 0600
 {{- end }}
-{{ tuple $envAll "worker" $mounts_coriolis_worker_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
       imagePullSecrets:
       - name: {{ .Values.images.imageCredentials.coriolisImagePullSecret }}
       containers:
@@ -108,6 +108,13 @@ spec:
               mountPath: /etc/coriolis/coriolis.conf
               subPath: coriolis.conf
               readOnly: true
+{{/*
+NOTE: the 'export_base_path' is no longer used at all since the migrations-as-replicas
+updates but we still create and mount it for backwards-compatibility reasons:
+*/}}
+            - name: coriolis-export-path
+              mountPath: {{ .Values.conf.coriolis.worker.export_base_path }}
+              readOnly: false
             {{- if .Values.conf.coriolis.DEFAULT.log_config_append }}
             - name: coriolis-etc
               mountPath: {{ .Values.conf.coriolis.DEFAULT.log_config_append }}
@@ -155,6 +162,8 @@ spec:
           configMap:
             name: coriolis-bin
             defaultMode: 0555
+        - name: coriolis-export-path
+          emptyDir: {}
         - name: coriolis-etc
           secret:
             secretName: coriolis-etc

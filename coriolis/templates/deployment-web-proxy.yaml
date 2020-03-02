@@ -54,6 +54,33 @@ spec:
         {{ .Values.labels.web_proxy.node_selector_key }}: {{ .Values.labels.web_proxy.node_selector_value }}
       initContainers:
 {{ tuple $envAll "web_proxy" $mounts_coriolis_web_proxy_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
+{{- if not (.Values.conf.coriolis_web_proxy.proxy_ssl_cers_secret) }}
+        - name: coriolis-web-proxy-ssl-init
+{{ tuple $envAll "coriolis_web_proxy_init" | include "helm-toolkit.snippets.image" | indent 10 }}
+          command:
+            - /tmp/coriolis-web-proxy-generate-certs.sh
+            - start
+{{ dict "envAll" $envAll "application" "coriolis_web_proxy" "container" "init_coriolis_web_proxy" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
+          volumeMounts:
+            - name: pod-tmp
+              mountPath: /tmp
+            - name: coriolis-bin
+              mountPath: /tmp/coriolis-web-proxy-generate-certs.sh
+              subPath: coriolis-web-proxy-generate-certs.sh
+              readOnly: true
+            - name: coriolis-web-proxy-ssl-certs
+              mountPath: {{ .Values.conf.coriolis_web_proxy.proxy_ssl_certs_dir }}
+              readOnly: false
+          volumes:
+            - name: pod-tmp
+              emptyDir: {}
+            - name: coriolis-web-proxy-ssl-certs
+              emptyDir: {}
+            - name: coriolis-bin
+              configMap:
+                name: coriolis-bin
+                defaultMode: 0555
+{{- end }}
       imagePullSecrets:
       - name: {{ .Values.images.imageCredentials.coriolisImagePullSecret }}
       containers:
@@ -70,6 +97,24 @@ spec:
                 command:
                   - /tmp/coriolis-web-proxy.sh
                   - stop
+          ports:
+            - name: cor-proxy-http
+              containerPort: {{ tuple "coriolis_web_proxy" "internal" "proxy-http" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+            - name: cor-proxy-https
+              containerPort: {{ tuple "coriolis_web_proxy" "internal" "proxy-https" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+          {{/* NOTE: there is no way to natively define multiple readiness/liceness
+          probes so we can only include the one, that being the HTTPS one: */}}
+          readinessProbe:
+            tcpSocket:
+              port: {{ tuple "coriolis_web_proxy" "internal" "proxy-https" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ tuple "coriolis_web_proxy" "internal" "proxy-https" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+            initialDelaySeconds: 30
+            failureThreshold: 3
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
           volumeMounts:
             - name: pod-tmp
               mountPath: /tmp
@@ -77,6 +122,19 @@ spec:
               mountPath: /tmp/coriolis-web-proxy.sh
               subPath: coriolis-web-proxy.sh
               readOnly: true
+            - name: coriolis-etc
+              mountPath: {{ .Values.conf.coriolis_web_proxy.proxy_vhost_conf_mount_path }}
+              subPath: coriolis-web-vhost.conf
+              readOnly: true
+{{- if (.Values.conf.coriolis_web_proxy.proxy_ssl_cers_secret) }}
+            - name: coriolis-web-proxy-ssl-certs
+              mountPath: {{ .Values.conf.coriolis_web_proxy.proxy_ssl_certs_dir }}
+              readOnly: true
+{{- else }}
+            - name: coriolis-web-proxy-ssl-certs
+              mountPath: {{ .Values.conf.coriolis_web_proxy.proxy_ssl_certs_dir }}
+              readOnly: true
+{{- end }}
 {{ if $mounts_coriolis_web_proxy.volumeMounts }}{{ toYaml $mounts_coriolis_web_proxy.volumeMounts | indent 12 }}{{ end }}
       volumes:
         - name: pod-tmp
@@ -89,5 +147,14 @@ spec:
           secret:
             secretName: coriolis-etc
             defaultMode: 0444
+{{- if (.Values.conf.coriolis_web_proxy.proxy_ssl_cers_secret) }}
+        - name: coriolis-web-proxy-ssl-certs
+          secret:
+            secretName: {{ .Values.conf.coriolis_web_proxy.proxy_ssl_cers_secret }}
+            defaultMode: 0555
+{{- else }}
+        - name: coriolis-web-proxy-ssl-certs
+          emptyDir: {}
+{{- end }}
 {{ if $mounts_coriolis_web_proxy.volumes }}{{ toYaml $mounts_coriolis_web_proxy.volumes | indent 8 }}{{ end }}
 {{- end }}

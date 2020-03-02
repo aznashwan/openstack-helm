@@ -59,9 +59,16 @@ data:
 {{- end }}
   rabbit-init.sh: |
 {{- include "helm-toolkit.scripts.rabbit_init" . | indent 4 }}
-{{- end }}
+
+{{- if not .Values.conf.proxy_ssl_cers_volume }}
+  coriolis-web-proxy-generate-certs.sh: |
+{{ tuple "bin/_generate_proxy_certs.sh.tpl" . | include "helm-toolkit.utils.template" | indent 4 }}
+{{- end}}
 
 {{- if (has "vmware_vsphere" .Values.providers.source) }}
   coriolis-setup-vix.sh: |
 {{ tuple "bin/_coriolis_setup_vix.sh.tpl" . | include "helm-toolkit.utils.template" | indent 4 }}
 {{- end }}
+
+{{- end }}
+

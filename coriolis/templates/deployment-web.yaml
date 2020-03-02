@@ -77,6 +77,10 @@ spec:
               mountPath: /tmp/coriolis-web.sh
               subPath: coriolis-web.sh
               readOnly: true
+            - name: coriolis-etc
+              mountPath: {{ .Values.conf.coriolis_web.mod_file_mount_path }}
+              subPath: ui-mod.json
+              readOnly: true
 {{ if $mounts_coriolis_web.volumeMounts }}{{ toYaml $mounts_coriolis_web.volumeMounts | indent 12 }}{{ end }}
       volumes:
         - name: pod-tmp

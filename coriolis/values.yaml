@@ -35,7 +35,7 @@ labels:
   web:
     node_selector_key: openstack-control-plane
     node_selector_value: enabled
-  web-proxy:
+  web_proxy:
     node_selector_key: openstack-control-plane
     node_selector_value: enabled
   job:
@@ -65,6 +65,8 @@ images:
     coriolis_worker: registry.cloudbase.it/appliance/coriolis-worker:latest
     coriolis_web: registry.cloudbase.it/appliance/coriolis-web:latest
     coriolis_web_proxy: registry.cloudbase.it/appliance/coriolis-web-proxy:latest
+    # NOTE: all this image needs is `openssl` installed:
+    coriolis_web_proxy_init: registry.cloudbase.it/appliance/coriolis-web-proxy:latest
   pull_policy: "IfNotPresent"
   imageCredentials:
     coriolisImagePullSecret: cbslreg
@@ -121,21 +123,24 @@ pod:
       pod:
         runAsUser: 42424
       container:
-        # TODO: define:
+        # TODO: define if needed later:
         init_coriolis_web_conf:
           runAsUser: 0
           readOnlyRootFilesystem: true
         coriolis_web:
-          readOnlyRootFilesystem: true
+          readOnlyRootFilesystem: false 
           allowPrivilegeEscalation: false
           runAsUser: 0
     coriolis_web_proxy:
-        # TODO: define:
-        init_coriolis_web_proxy_conf:
+      pod:
+        runAsUser: 42424
+      container:
+        init_coriolis_web_proxy:
           runAsUser: 0
           readOnlyRootFilesystem: true
         coriolis_web_proxy:
-          readOnlyRootFilesystem: true
+          # NOTE: apache2 needs access to /run and /var/log:
+          readOnlyRootFilesystem: false
           allowPrivilegeEscalation: false
           runAsUser: 0
 
@@ -258,7 +263,6 @@ pod:
         memory: "1024Mi"
         cpu: "2000m"
     jobs:
-      # TODO: check jobs list:
       bootstrap:
         requests:
           memory: "128Mi"
@@ -347,9 +351,25 @@ network:
     external_policy_local: false
     node_port:
       enabled: false
-      port: 30667
+      port: 37667
+  proxy:
+    ingress:
+      public: true
+      classes:
+        namespace: "nginx"
+        cluster: "nginx-cluster"
+      annotations:
+        nginx.ingress.kubernetes.io/rewrite-target: /
+    external_policy_local: false
+    node_port_http:
+      enabled: false
+      port: 38080
+    node_port_https:
+      enabled: false
+      port: 38443
 
 conf:
+
   paste:
     composite:coriolis-api:
       use: call:coriolis.api:root_app_factory
@@ -366,6 +386,7 @@ conf:
       paste.filter_factory: coriolis.api.middleware.auth:CoriolisKeystoneContext.factory
     filter:request_id:
       paste.filter_factory: oslo_middleware.request_id:RequestId.factory
+
   policy:
     admin: "role:admin"
     admin_or_owner: "rule:admin or project_id:%(project_id)s"
@@ -409,6 +430,7 @@ conf:
     migration:replica_schedules:show: "rule:admin_or_owner"
     migration:replica_schedules:update: "rule:admin_or_owner"
     migration:replica_schedules:delete: "rule:admin_or_owner"
+
   coriolis:
     DEFAULT:
       # NOTE: will be set by openstack-helm:
@@ -469,6 +491,7 @@ conf:
       debug_os_morphing_errors: false
       conductor_rpc_timeout: 60
     worker:
+      export_base_path: /opt/coriolis/export
       worker_rpc_timeout: 60
 
   providers:
@@ -1028,6 +1051,27 @@ conf:
         # This requires that the VM have no pre-existing snapshots.
         automatically_enable_cbt = False
 
+  coriolis_web:
+    # NOTE: The below will get rendered to JSON passed to the UI:
+    mod_config:
+      config: {}
+      providers: {}
+    mod_file_mount_path: /opt/coriolis/mod/ui-mod.json
+
+  coriolis_web_proxy:
+    # NOTE: the vhost config will get created and stored in a secret but
+    # the proxy Dockerfile has a symlink to the below path hardcoded:
+    proxy_vhost_conf_mount_path: /etc/coriolis/coriolis-web-vhost.conf
+    # Directory where the SSL certs will be mounted in
+    # the coriolis-web-proxy container:
+    proxy_ssl_certs_dir: /etc/coriolis/ssl
+    # TODO: allow for custom certs:
+    # Name of a pre-existing K8s secret which contains a
+    # "coriolis.crt" and "coriolis.key" file.
+    # If not provided, an EmptyDir volume will be used
+    # and new certs automatically generated.
+    proxy_ssl_cers_secret:
+
   logging:
     loggers:
       keys:
@@ -1089,10 +1133,10 @@ conf:
     formatter_default:
       format: "%(message)s"
       datefmt: "%Y-%m-%d %H:%M:%S"
+
   rabbitmq:
     #NOTE(rk760n): adding rmq policy to mirror messages from notification queues and set expiration time for the ones
     policies:
-      # TODO: check if these are necessary
       - vhost: "coriolis"
         name: "ha_ttl_coriolis"
         definition:
@@ -1262,8 +1306,6 @@ secrets:
 # services.
 endpoints:
 
-  # TODO: add web-proxy?
-
   cluster_domain_suffix: cluster.local
 
   local_image_registry:
@@ -1277,7 +1319,6 @@ endpoints:
       default: null
     port:
       registry:
-        # TODO: add registry.cloudbase.it port too:
         node: 5000
 
   identity:
@@ -1311,6 +1352,23 @@ endpoints:
       api:
         default: 80
         internal: 5000
+
+  key_manager:
+    name: barbican
+    hosts:
+      default: barbican-api
+      public: barbican
+    host_fqdn_override:
+      default: null
+    path:
+      default: /
+    scheme:
+      default: http
+    port:
+      api:
+        default: 9311
+        public: 80
+
   migration:
     name: coriolis
     hosts:
@@ -1333,6 +1391,26 @@ endpoints:
       api:
         default: 7667
         public: 80
+
+  coriolis_web_proxy:
+    name: coriolis-web-proxy
+    hosts:
+      default: coriolis-web-proxy
+      public: coriolis-web-proxy
+    host_fqdn_override:
+      default: null
+    path:
+      default: ''
+    scheme:
+      default: 'https'
+    port:
+      proxy-http:
+        default: 80
+        public: 80 
+      proxy-https:
+        default: 443 
+        public: 443
+
   oslo_db:
     auth:
       # TODO: check where these are set/used and use them:
@@ -1351,6 +1429,7 @@ endpoints:
     port:
       mysql:
         default: 3306
+
   oslo_messaging:
     auth:
       # TODO: check where these are set/used and use them:
@@ -1374,6 +1453,7 @@ endpoints:
         default: 5672
       http:
         default: 15672
+
   # TODO: see how/where to set these:
   oslo_cache:
     auth:
@@ -1390,6 +1470,7 @@ endpoints:
     port:
       memcache:
         default: 11211
+
   kube_dns:
     namespace: kube-system
     name: kubernetes-dns
@@ -1404,6 +1485,7 @@ endpoints:
       dns:
         default: 53
         protocol: UDP
+
   ingress:
     namespace: null
     name: ingress
@@ -1429,11 +1511,12 @@ manifests:
   deployment_replica_cron: true
   deployment_worker: true
 
-  # TODO: enable web UI:
-  deployment_web: false
-  deployment_web_proxy: false
+  deployment_web: true 
+  deployment_web_proxy: true 
 
   ingress_api: true
+  ingress_proxy: true
+
   job_bootstrap: true
   job_clean: true
   job_create_internal_tenant: true
@@ -1457,6 +1540,7 @@ manifests:
   secret_rabbitmq: true
 
   service_api: true
+  service_web_proxy: true
   service_ingress_api: true
 
 ########### auto-generated by `helm create`:
@@ -1511,7 +1595,7 @@ manifests:
 #  # We usually recommend not to specify default resources and to leave this as a conscious
 #  # choice for the user. This also increases chances charts run on environments with little
 #  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-#  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+#  # lines, adjust them as necessary, and remove the curly braces after ' resources:'.
 #  # limits:
 #  #   cpu: 100m
 #  #   memory: 128Mi

@@ -1,5 +1,3 @@
-#!/bin/bash
-
 {{/*
 Copyright 2020 Cloudbase Solutions SRL.
 
@@ -16,16 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
-set -ex
-COMMAND="${@:-start}"
-
-function start () {
-  rm -rf /var/run/apache2/*
-  /usr/sbin/apachectl -DFOREGROUND
-}
-
-function stop () {
-  kill -TERM 1
-}
-
-$COMMAND
+{{- if and .Values.manifests.ingress_proxy .Values.network.proxy.ingress.public }}
+{{/* NOTE: helm ingress manufest too limited to support multiples,
+skipping plain HTTP ingress entirely:
+{{- $ingressOpts := dict "envAll" . "backendServiceType" "coriolis_web_proxy" "backendPort" "cor-proxy-http" -}}
+{{ $ingressOpts | include "helm-toolkit.manifests.ingress" }}
+*/}}
+{{- $ingressOpts := dict "envAll" . "backendServiceType" "coriolis_web_proxy" "backendPort" "cor-proxy-https" -}}
+{{ $ingressOpts | include "helm-toolkit.manifests.ingress" }}
+{{- end }}

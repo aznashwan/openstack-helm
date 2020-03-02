@@ -104,6 +104,8 @@ data:
   logging.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.logging | b64enc }}
   api-paste.ini: {{ include "helm-toolkit.utils.to_ini" .Values.conf.paste | b64enc }}
   policy.json: {{ toJson .Values.conf.policy | b64enc }}
+  ui-mod.json: {{ toJson .Values.conf.coriolis_web.mod_config | b64enc }}
+  coriolis-web-vhost.conf:  {{ tuple "utils/_coriolis_web_vhost.conf.tpl" . | include "helm-toolkit.utils.template" | b64enc }}
 {{- range $prv := $envAll.Values.providers.source }}
   {{- $conf := index $providersConf $prv }}
   {{ printf $providersConf.provider_conf_file_name_format $prv }}: {{ index $conf "conf" | b64enc }}

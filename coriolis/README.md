@@ -35,15 +35,15 @@ kubectl create secret docker-registry cbslreg \
 # NOTE: requires Python 3:
 sudo apt install -y python3-dev python3-pip
 sudo pip3 install --upgrade --force-reinstall git+https://github.com/cloudbase/python-coriolisclient.git
-
-# Deploy ingress controller:
-./tools/deployment/component/common/ingress.sh
 ```
 
 
 ## Deploy supporting services:
 
 ``` bash
+# Deploy ingress controller:
+./tools/deployment/component/common/ingress.sh
+
 # NOTE: A storage provisioner is required for providing some pv
 # storage class. All further charts/scripts expect there to be
 # a storage class named 'general'.
@@ -62,6 +62,9 @@ sudo pip3 install --upgrade --force-reinstall git+https://github.com/cloudbase/p
 
 # Keystone:
 ./tools/deployment/developer/nfs/080-keystone.sh
+
+# Barbican:
+./tools/deployment/developer/common/085-barbican.sh
 ```
 
 

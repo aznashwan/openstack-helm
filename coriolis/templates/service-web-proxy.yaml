@@ -1,0 +1,54 @@
+{{/*
+Copyright 2020 Cloudbase Solutions SRL.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+
+{{- if .Values.manifests.service_web_proxy }}
+{{- $envAll := . }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ tuple "coriolis_web_proxy" "internal" . | include "helm-toolkit.endpoints.hostname_short_endpoint_lookup" }}
+spec:
+  ports:
+    - name: cor-proxy-http
+      protocol: TCP
+      port: {{ tuple "coriolis_web_proxy" "internal" "proxy-http" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+      targetPort: {{ tuple "coriolis_web_proxy" "internal" "proxy-http" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+    {{ if .Values.network.proxy.node_port_http.enabled }}
+      nodePort: {{ .Values.network.proxy.node_port_http.port }}
+    {{ end }}
+    - name: cor-proxy-https
+      protocol: TCP
+      port: {{ tuple "coriolis_web_proxy" "internal" "proxy-https" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+      targetPort: {{ tuple "coriolis_web_proxy" "internal" "proxy-https" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+    {{ if .Values.network.proxy.node_port_https.enabled }}
+      nodePort: {{ .Values.network.proxy.node_port_https.port }}
+    {{ end }}
+  selector:
+{{ tuple $envAll "coriolis" "web-proxy" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
+  {{ if .Values.network.proxy.node_port_http.enabled }}
+  type: NodePort
+  {{ if .Values.network.proxy.external_policy_local }}
+  externalTrafficPolicy: Local
+  {{ end }}
+  {{ end }}
+  {{ if .Values.network.proxy.node_port_https.enabled }}
+  type: NodePort
+  {{ if .Values.network.proxy.external_policy_local }}
+  externalTrafficPolicy: Local
+  {{ end }}
+  {{ end }}
+{{- end }}
